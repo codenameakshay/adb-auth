@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } from 'electron'
+import { app, BrowserWindow, Tray, Menu, nativeImage } from 'electron'
 import * as path from 'node:path'
 import * as url from 'node:url'
 import { registerAllHandlers } from './ipc/index.js'

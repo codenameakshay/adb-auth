@@ -1,8 +1,8 @@
-import { exec } from 'node:child_process'
+import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import type { AdbDevice, MdnsService } from '../../shared/types.js'
 
-const execAsync = promisify(exec)
+const execFileAsync = promisify(execFile)
 
 let adbPath: string | null = null
 
@@ -16,15 +16,22 @@ export function getAdbPath(): string | null {
 
 function getAdb(): string {
   if (!adbPath) throw new Error('ADB path not configured')
-  return `"${adbPath}"`
+  return adbPath
 }
 
-async function run(args: string, timeoutMs = 10000): Promise<string> {
-  const { stdout } = await execAsync(`${getAdb()} ${args}`, {
-    windowsHide: true,
-    timeout: timeoutMs,
-  })
-  return stdout
+async function run(args: string[], timeoutMs = 10000): Promise<string> {
+  try {
+    const { stdout, stderr } = await execFileAsync(getAdb(), args, {
+      windowsHide: true,
+      timeout: timeoutMs,
+      env: process.env,
+    })
+    return `${stdout || ''}${stderr || ''}`
+  } catch (err: unknown) {
+    const e = err as { stdout?: string; stderr?: string; message?: string }
+    const detail = `${e.stdout || ''}${e.stderr || ''}`.trim()
+    throw new Error(detail || e.message || 'ADB command failed')
+  }
 }
 
 function sleep(ms: number): Promise<void> {
@@ -56,7 +63,7 @@ export function parseDeviceList(output: string): AdbDevice[] {
     if (isWifi) {
       const colonIdx = serial.lastIndexOf(':')
       ip = serial.substring(0, colonIdx)
-      port = parseInt(serial.substring(colonIdx + 1), 10)
+      port = Number.parseInt(serial.substring(colonIdx + 1), 10)
     }
 
     const kvPairs: Record<string, string> = {}
@@ -121,27 +128,24 @@ export function isConnectOutputSuccessful(output: string): boolean {
 }
 
 export async function getDevices(): Promise<AdbDevice[]> {
-  const output = await run('devices -l')
+  const output = await run(['devices', '-l'])
   return parseDeviceList(output)
 }
 
 export async function pairDevice(host: string, port: number, code: string): Promise<string> {
-  const output = await run(`pair ${host}:${port} ${code}`, 30000)
-  return output
+  return run(['pair', `${host}:${port}`, code], 30000)
 }
 
 export async function connectDevice(host: string, port: number): Promise<string> {
-  const output = await run(`connect ${host}:${port}`, 15000)
-  return output
+  return run(['connect', `${host}:${port}`], 15000)
 }
 
 export async function disconnectDevice(serial: string): Promise<string> {
-  const output = await run(`disconnect ${serial}`, 10000)
-  return output
+  return run(['disconnect', serial], 10000)
 }
 
 export async function discoverMdnsServices(typeFilter?: '_adb-tls-connect._tcp' | '_adb-tls-pairing._tcp'): Promise<MdnsService[]> {
-  const output = await run('mdns services', 15000)
+  const output = await run(['mdns', 'services'], 15000)
   const all = parseMdnsServices(output)
   if (!typeFilter) return all
   return all.filter((svc) => svc.type === typeFilter)
@@ -166,10 +170,7 @@ export async function waitForMdnsService(options: WaitForMdnsOptions): Promise<M
 
     const match = services.find((svc) => {
       if (options.name && svc.name !== options.name) return false
-      if (normalizedHostHint) {
-        const currentHost = normalizeHost(svc.host)
-        if (currentHost !== normalizedHostHint) return false
-      }
+      if (normalizedHostHint && normalizeHost(svc.host) !== normalizedHostHint) return false
       return true
     })
 
@@ -183,7 +184,7 @@ export async function waitForMdnsService(options: WaitForMdnsOptions): Promise<M
     await sleep(pollMs)
   }
 
-  throw new Error(`Timed out waiting for ${options.type} service`) 
+  throw new Error(`Timed out waiting for ${options.type} service`)
 }
 
 export async function autoConnectDevice(hostHint?: string): Promise<string> {
@@ -203,9 +204,9 @@ export async function autoConnectDevice(hostHint?: string): Promise<string> {
 }
 
 export async function killServer(): Promise<void> {
-  await run('kill-server', 10000)
+  await run(['kill-server'], 10000)
 }
 
 export async function startServer(): Promise<void> {
-  await run('start-server', 15000)
+  await run(['start-server'], 15000)
 }

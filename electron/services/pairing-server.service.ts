@@ -9,12 +9,24 @@ import {
   isConnectOutputSuccessful,
 } from './adb.service.js'
 
-let QRCode: any = null
+type QRModule = {
+  toDataURL: (
+    text: string,
+    opts?: {
+      errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H'
+      width?: number
+      margin?: number
+      color?: { dark: string; light: string }
+    }
+  ) => Promise<string>
+}
+
+let QRCode: QRModule | null = null
 
 async function getQRCode() {
   if (!QRCode) {
     const mod = await import('qrcode')
-    QRCode = mod.default || mod
+    QRCode = (mod.default || mod) as QRModule
   }
   return QRCode
 }

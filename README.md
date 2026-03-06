@@ -1,73 +1,71 @@
-# React + TypeScript + Vite
+# ADB Auth
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ADB Auth is a desktop app (Electron + React) for Android wireless debugging workflows:
+- Pair via QR code (Android 11+ Wireless Debugging)
+- Pair via pairing code
+- Auto-connect to wireless debug endpoint
+- View connected/offline devices and manage ADB server state
 
-Currently, two official plugins are available:
+## Security and Privacy
+- No telemetry, analytics, or cloud backend.
+- App executes only your local `adb` binary.
+- Pairing/session state is local-only.
+- Settings are stored in Electron `userData/settings.json`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+See:
+- [SECURITY.md](SECURITY.md) for vulnerability reporting
+- [SECURITY_REVIEW.md](SECURITY_REVIEW.md) for current review findings
 
-## React Compiler
+## Requirements
+- Node.js 20+ (recommended)
+- npm 10+
+- Android platform-tools (`adb`) installed and available in PATH, or configured in-app
+- Android 11+ for wireless pairing
+- OpenSSL available on system PATH (used by pairing flow on some environments)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Quick Start (Development)
+```bash
+git clone https://github.com/<your-username>/adb-auth.git
+cd adb-auth
+npm ci
+npm run dev:electron
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Build
+```bash
+npm run build:renderer
+npm run build:electron
 ```
+
+## Local Packaging (no publish)
+```bash
+npm run dist
+```
+
+## Using Pairing
+
+### QR Pairing
+1. Open app: `Pair Device` -> `QR Code`.
+2. On phone: `Developer options` -> `Wireless debugging` -> `Pair device with QR code`.
+3. Scan QR.
+4. App waits for pairing service, runs `adb pair`, then waits for debug endpoint and runs `adb connect`.
+
+### Manual Pairing
+1. On phone: `Wireless debugging` -> `Pair device with pairing code`.
+2. Enter IP, pairing port, and 6-digit code.
+3. (Recommended) Enter debug port shown by phone.
+4. App pairs and then connects.
+
+## Troubleshooting
+- `Paired but not connected`: Provide debug port in manual flow; some networks block mDNS discovery.
+- `Waiting for debug endpoint`: Keep phone Wireless Debugging screen open, then retry.
+- `ADB not found`: set ADB path in Settings.
+- `Pairing fails`: ensure both devices are on same Wi-Fi and no VPN isolation is active.
+
+## Open Source
+- License: MIT (see [LICENSE](LICENSE))
+- Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Code of conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+
+## Release
+- Release checklist: [RELEASE.md](RELEASE.md)

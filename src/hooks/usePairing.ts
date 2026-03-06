@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { PairingStatus, StartPairingResult } from '../../shared/types'
+import type { PairingStatus } from '../../shared/types'
 
 type PairingState = {
   status: 'idle' | 'waiting' | 'pairing' | 'connecting' | 'success' | 'error'

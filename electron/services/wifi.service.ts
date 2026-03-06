@@ -11,7 +11,7 @@ export async function getSsid(): Promise<string | null> {
   try {
     if (isWindows) {
       const { stdout } = await execAsync(
-        'powershell -NoProfile -Command "(netsh wlan show interfaces) | Select-String \'^\s+SSID\s+:\' | Select-Object -First 1 | ForEach-Object { $_ -replace \'.*SSID\s+:\s+\', \'\' }"',
+        'powershell -NoProfile -Command "(netsh wlan show interfaces) | Select-String \'^\\s+SSID\\s+:\' | Select-Object -First 1 | ForEach-Object { $_ -replace \'.*SSID\\s+:\\s+\', \'\' }"',
         { windowsHide: true, timeout: 5000 }
       )
       const ssid = stdout.trim()
@@ -29,7 +29,7 @@ export async function getSsid(): Promise<string | null> {
 
     if (isMac) {
       const { stdout } = await execAsync(
-        '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I | awk -F\": \" \'/ SSID/ {print $2}\'',
+        '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I | awk -F": " \'/ SSID/ {print $2}\'',
         { windowsHide: true, timeout: 5000 }
       )
       const ssid = stdout.trim()
@@ -58,7 +58,7 @@ export async function getLocalIp(): Promise<string | null> {
   } else if (isLinux) {
     try {
       const { stdout } = await execAsync(
-        'ip route get 1.1.1.1 | awk \'{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}\'' ,
+        'ip route get 1.1.1.1 | awk \'{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}\'',
         { windowsHide: true, timeout: 5000 }
       )
       const ip = stdout.trim()

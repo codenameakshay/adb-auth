@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { BrowserWindow } from 'electron'
 import { IPC } from '../../shared/ipc-channels.js'
 import { mdnsDiscovery } from '../services/mdns.service.js'
 import type { MdnsService } from '../../shared/types.js'

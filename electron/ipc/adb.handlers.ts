@@ -1,9 +1,27 @@
-import { ipcMain, dialog } from 'electron'
+import { ipcMain } from 'electron'
 import { IPC } from '../../shared/ipc-channels.js'
 import type { IpcResult, AdbDevice } from '../../shared/types.js'
 import * as adb from '../services/adb.service.js'
 import { detectAdbPath, verifyAdbPath } from '../utils/adb-path.js'
 import { getStore } from '../services/store.service.js'
+
+function isValidPort(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 65535
+}
+
+function isSafeHost(host: unknown): host is string {
+  if (typeof host !== 'string') return false
+  const trimmed = host.trim()
+  if (!trimmed || trimmed.length > 253) return false
+  return /^[a-zA-Z0-9.:-]+$/.test(trimmed)
+}
+
+function isSafeCode(code: unknown): code is string {
+  if (typeof code !== 'string') return false
+  const trimmed = code.trim()
+  if (!trimmed) return false
+  return /^[0-9]{6,10}$/.test(trimmed)
+}
 
 export function registerAdbHandlers(): void {
   ipcMain.handle(IPC.ADB_GET_DEVICES, async (): Promise<IpcResult<AdbDevice[]>> => {
@@ -17,7 +35,11 @@ export function registerAdbHandlers(): void {
 
   ipcMain.handle(IPC.ADB_PAIR, async (_, host: string, port: number, code: string): Promise<IpcResult<string>> => {
     try {
-      const output = await adb.pairDevice(host, port, code)
+      if (!isSafeHost(host) || !isValidPort(port) || !isSafeCode(code)) {
+        return { success: false, error: 'Invalid host, port, or pairing code format' }
+      }
+
+      const output = await adb.pairDevice(host.trim(), port, code.trim())
       const success = adb.isPairOutputSuccessful(output)
       if (!success && output.toLowerCase().includes('failed')) {
         return { success: false, error: output.trim() }
@@ -30,7 +52,11 @@ export function registerAdbHandlers(): void {
 
   ipcMain.handle(IPC.ADB_CONNECT, async (_, host: string, port: number): Promise<IpcResult<string>> => {
     try {
-      const output = await adb.connectDevice(host, port)
+      if (!isSafeHost(host) || !isValidPort(port)) {
+        return { success: false, error: 'Invalid host or port format' }
+      }
+
+      const output = await adb.connectDevice(host.trim(), port)
       const success = adb.isConnectOutputSuccessful(output)
       return { success, data: output.trim(), error: success ? undefined : output.trim() }
     } catch (err) {
@@ -40,7 +66,11 @@ export function registerAdbHandlers(): void {
 
   ipcMain.handle(IPC.ADB_AUTO_CONNECT, async (_, hostHint?: string): Promise<IpcResult<string>> => {
     try {
-      const output = await adb.autoConnectDevice(hostHint)
+      if (hostHint !== undefined && !isSafeHost(hostHint)) {
+        return { success: false, error: 'Invalid host hint format' }
+      }
+
+      const output = await adb.autoConnectDevice(hostHint?.trim())
       return { success: true, data: output.trim() }
     } catch (err) {
       return { success: false, error: String(err) }
@@ -58,7 +88,6 @@ export function registerAdbHandlers(): void {
 
   ipcMain.handle(IPC.ADB_GET_PATH, async (): Promise<IpcResult<string | null>> => {
     try {
-      // Check stored path first
       const settings = getStore().get()
       if (settings.adbPath) {
         const valid = await verifyAdbPath(settings.adbPath)
@@ -68,7 +97,6 @@ export function registerAdbHandlers(): void {
         }
       }
 
-      // Auto-detect
       const detected = await detectAdbPath()
       if (detected) {
         adb.setAdbPath(detected)
