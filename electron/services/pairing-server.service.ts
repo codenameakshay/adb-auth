@@ -33,6 +33,23 @@ function randomHex(bytes: number): string {
   return crypto.randomBytes(bytes).toString('hex')
 }
 
+function randomDigits(count: number): string {
+  let out = ''
+  while (out.length < count) {
+    out += crypto.randomInt(0, 10).toString()
+  }
+  return out
+}
+
+function randomStudioServiceName(): string {
+  const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let suffix = ''
+  for (let i = 0; i < 10; i++) {
+    suffix += alphabet[crypto.randomInt(0, alphabet.length)]
+  }
+  return `studio-${suffix}`
+}
+
 async function getFreePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const srv = net.createServer()
@@ -89,14 +106,16 @@ class PairingServerService extends EventEmitter {
   private tlsServer: tls.Server | null = null
   private bonjour: any = null
   private bonjourService: any = null
+  private waitingTimer: NodeJS.Timeout | null = null
   private port: number = 0
   private password: string = ''
   private serviceName: string = ''
 
   async start(): Promise<StartPairingResult> {
-    // Generate credentials
-    this.serviceName = `ADB_WIFI_${randomHex(4).toUpperCase()}`
-    this.password = randomHex(8)
+    // Generate QR-pairing compatible credentials.
+    // Android expects a "studio-<RANDOM-10>" service naming style and a numeric QR secret.
+    this.serviceName = randomStudioServiceName()
+    this.password = randomDigits(10)
 
     // Get a free port
     this.port = await getFreePort()
@@ -124,6 +143,15 @@ class PairingServerService extends EventEmitter {
     // Advertise via mDNS
     await this.advertise()
 
+    // Avoid waiting forever when Android cannot discover/connect.
+    this.waitingTimer = setTimeout(() => {
+      this.emit('status', {
+        status: 'error',
+        error: 'No pairing connection received. Ensure both devices are on the same Wi-Fi and mDNS is available.',
+      } as PairingStatus)
+      this.stop()
+    }, 60000)
+
     // Generate QR code
     const qrString = `WIFI:T:ADB;S:${this.serviceName};P:${this.password};;`
     const QR = await getQRCode()
@@ -145,11 +173,16 @@ class PairingServerService extends EventEmitter {
       name: this.serviceName,
       type: 'adb-tls-pairing',
       port: this.port,
-      txt: {},
+      txt: { v: '1' },
     })
   }
 
   private async handleConnection(socket: tls.TLSSocket): Promise<void> {
+    if (this.waitingTimer) {
+      clearTimeout(this.waitingTimer)
+      this.waitingTimer = null
+    }
+
     const androidIp = socket.remoteAddress || 'unknown'
 
     this.emit('status', {
@@ -236,6 +269,10 @@ class PairingServerService extends EventEmitter {
   }
 
   stop(): void {
+    if (this.waitingTimer) {
+      clearTimeout(this.waitingTimer)
+      this.waitingTimer = null
+    }
     if (this.bonjourService) {
       try { this.bonjourService.stop() } catch { /* ignore */ }
       this.bonjourService = null

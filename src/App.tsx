@@ -13,7 +13,7 @@ function AppContent() {
   const connectedCount = devices.filter((d) => d.status === 'device').length
 
   return (
-    <div className="app-shell relative flex h-screen w-screen overflow-hidden select-none p-3">
+    <div className="app-shell relative flex h-screen w-screen overflow-hidden select-none p-2.5 md:p-3.5">
       {/* Decorative glow layers */}
       <div aria-hidden className="pointer-events-none absolute -top-28 -left-24 h-80 w-80 rounded-full bg-blue-500/15 blur-3xl" />
       <div aria-hidden className="pointer-events-none absolute -right-24 top-0 h-72 w-72 rounded-full bg-green-500/15 blur-3xl" />
@@ -31,7 +31,7 @@ function AppContent() {
 
       <Sidebar />
 
-      <div className="relative z-10 ml-3 flex min-w-0 flex-1 flex-col overflow-hidden pt-8">
+      <div className="relative z-10 ml-2.5 flex min-w-0 flex-1 flex-col overflow-hidden pt-8 md:ml-3.5">
         <main id="main-content" className="glass-panel flex min-h-0 flex-1 flex-col overflow-hidden">
           <Routes>
             <Route path="/" element={<DevicesPage />} />

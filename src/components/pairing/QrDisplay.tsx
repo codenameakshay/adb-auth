@@ -72,7 +72,7 @@ export function QrDisplay({ qrDataUrl, status, androidIp, error, onStart, onCanc
   }
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center gap-7 py-2 md:py-3">
       <div
         className={cn(
           'relative overflow-hidden rounded-2xl border-2 transition-all duration-200',
@@ -82,9 +82,9 @@ export function QrDisplay({ qrDataUrl, status, androidIp, error, onStart, onCanc
         )}
       >
         {qrDataUrl ? (
-          <img src={qrDataUrl} alt="ADB pairing QR code" className="h-64 w-64 bg-white object-contain" />
+          <img src={qrDataUrl} alt="ADB pairing QR code" className="h-64 w-64 rounded-xl bg-white object-contain md:h-72 md:w-72" />
         ) : (
-          <div className="flex h-64 w-64 items-center justify-center bg-slate-900">
+          <div className="flex h-64 w-64 items-center justify-center bg-slate-900 md:h-72 md:w-72">
             <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
           </div>
         )}
@@ -99,11 +99,11 @@ export function QrDisplay({ qrDataUrl, status, androidIp, error, onStart, onCanc
         )}
       </div>
 
-      <div className="text-center">
+      <div className="max-w-md text-center">
         {status === 'waiting' && (
           <>
-            <p className="mb-1 text-sm font-semibold text-[var(--text-primary)]">Waiting for Android device scan...</p>
-            <p className="text-xs text-[var(--text-muted)]">
+            <p className="mb-1.5 text-2xl font-semibold text-[var(--text-primary)]">Waiting for Android device scan...</p>
+            <p className="text-sm text-[var(--text-muted)]">
               Open Wireless Debugging on phone and select Pair device with QR code.
             </p>
           </>

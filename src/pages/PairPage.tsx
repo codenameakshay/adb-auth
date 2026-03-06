@@ -27,7 +27,7 @@ export function PairPage() {
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <Header title="Pair Device" />
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto px-5 py-6 md:px-7">
         {toast && (
           <div
             role="alert"
@@ -41,8 +41,8 @@ export function PairPage() {
           </div>
         )}
 
-        <div className="mx-auto max-w-2xl">
-          <div className="glass-panel-strong mb-5 flex gap-1 rounded-2xl p-1.5">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+          <div className="glass-panel-strong flex gap-1.5 rounded-2xl p-1.5">
             <button
               onClick={() => {
                 setActiveTab('qr')
@@ -71,7 +71,7 @@ export function PairPage() {
             </button>
           </div>
 
-          <div className="glass-panel-strong p-6">
+          <div className="glass-panel-strong p-6 md:p-8">
             {activeTab === 'qr' ? (
               <QrDisplay
                 qrDataUrl={pairing.qrDataUrl}
@@ -86,12 +86,21 @@ export function PairPage() {
             )}
           </div>
 
-          <section className="glass-panel mt-4 p-4">
+          <section className="glass-panel p-5 md:p-6">
             <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Requirements</h2>
-            <ul className="space-y-1 text-sm text-[var(--text-secondary)]">
-              <li>Android 11 or later</li>
-              <li>Phone and computer on the same Wi-Fi network</li>
-              <li>Developer Options with Wireless Debugging enabled</li>
+            <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-300" aria-hidden />
+                Android 11 or later
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-300" aria-hidden />
+                Phone and computer on the same Wi-Fi network
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-300" aria-hidden />
+                Developer Options with Wireless Debugging enabled
+              </li>
             </ul>
           </section>
         </div>
