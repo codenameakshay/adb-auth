@@ -5,16 +5,15 @@ interface StatusBarProps {
 
 export function StatusBar({ adbPath, deviceCount }: StatusBarProps) {
   return (
-    <div className="h-6 bg-neutral-950 border-t border-neutral-800 flex items-center px-4 gap-4 text-xs text-neutral-500 flex-shrink-0">
-      <span>
-        ADB: {adbPath ? (
-          <span className="text-green-500">Detected</span>
-        ) : (
-          <span className="text-red-500">Not found</span>
-        )}
+    <footer className="flex h-9 items-center gap-3 border-t border-white/10 bg-slate-950/50 px-4 text-xs text-[var(--text-muted)]">
+      <span className="ui-chip" role="status" aria-live="polite">
+        ADB
+        <span className={adbPath ? 'text-green-300' : 'text-red-300'}>{adbPath ? 'Detected' : 'Not Found'}</span>
       </span>
-      <span className="text-neutral-700">|</span>
-      <span>{deviceCount} device{deviceCount !== 1 ? 's' : ''} connected</span>
-    </div>
+      <span className="ui-chip" role="status" aria-live="polite">
+        Devices
+        <span className="text-[var(--text-secondary)]">{deviceCount}</span>
+      </span>
+    </footer>
   )
 }

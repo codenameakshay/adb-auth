@@ -13,6 +13,10 @@ let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 
 function createWindow(): void {
+  const iconPath = process.platform === 'win32'
+    ? path.join(__dirname, '../../resources/icon.ico')
+    : path.join(__dirname, '../../resources/tray-icon.png')
+
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 620,
@@ -32,7 +36,7 @@ function createWindow(): void {
       sandbox: false,
     },
     show: false,
-    icon: path.join(__dirname, '../../resources/icon.ico'),
+    icon: iconPath,
   })
 
   if (isDev) {

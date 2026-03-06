@@ -15,9 +15,9 @@ export function NetworkBadge() {
 
   if (!ssid && !ip) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-        <WifiOff className="w-3.5 h-3.5" />
-        <span>No WiFi</span>
+      <div className="ui-chip" role="status" aria-live="polite">
+        <WifiOff className="h-3.5 w-3.5" />
+        <span>No Wi-Fi</span>
       </div>
     )
   }
@@ -25,18 +25,19 @@ export function NetworkBadge() {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors group"
-      title={copied ? 'Copied!' : `Click to copy ${ip}`}
+      className="ui-chip group min-h-10 border-blue-200/25 bg-blue-500/10 hover:bg-blue-500/15"
+      title={copied ? 'Copied!' : `Copy ${ip}`}
+      aria-label={copied ? 'IP copied to clipboard' : 'Copy local IP address'}
     >
-      <Wifi className="w-3.5 h-3.5 text-green-500" />
-      {ssid && <span className="text-neutral-300">{ssid}</span>}
-      {ssid && ip && <span className="text-neutral-600">·</span>}
+      <Wifi className="h-3.5 w-3.5 text-green-300" />
+      {ssid && <span className="max-w-[120px] truncate text-[var(--text-secondary)]">{ssid}</span>}
+      {ssid && ip && <span className="text-[var(--text-faint)]">•</span>}
       {ip && (
-        <span className={cn('font-mono', copied ? 'text-green-400' : '')}>
+        <span className={cn('font-code', copied ? 'text-green-300' : 'text-blue-200')}>
           {copied ? 'Copied!' : ip}
         </span>
       )}
-      <Copy className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+      <Copy className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-80" />
     </button>
   )
 }
