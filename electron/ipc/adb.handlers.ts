@@ -18,7 +18,7 @@ export function registerAdbHandlers(): void {
   ipcMain.handle(IPC.ADB_PAIR, async (_, host: string, port: number, code: string): Promise<IpcResult<string>> => {
     try {
       const output = await adb.pairDevice(host, port, code)
-      const success = output.toLowerCase().includes('paired') || output.toLowerCase().includes('successfully paired')
+      const success = adb.isPairOutputSuccessful(output)
       if (!success && output.toLowerCase().includes('failed')) {
         return { success: false, error: output.trim() }
       }
@@ -31,8 +31,17 @@ export function registerAdbHandlers(): void {
   ipcMain.handle(IPC.ADB_CONNECT, async (_, host: string, port: number): Promise<IpcResult<string>> => {
     try {
       const output = await adb.connectDevice(host, port)
-      const success = output.toLowerCase().includes('connected')
+      const success = adb.isConnectOutputSuccessful(output)
       return { success, data: output.trim(), error: success ? undefined : output.trim() }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
+  })
+
+  ipcMain.handle(IPC.ADB_AUTO_CONNECT, async (_, hostHint?: string): Promise<IpcResult<string>> => {
+    try {
+      const output = await adb.autoConnectDevice(hostHint)
+      return { success: true, data: output.trim() }
     } catch (err) {
       return { success: false, error: String(err) }
     }

@@ -76,6 +76,8 @@ export function PairPage() {
               <QrDisplay
                 qrDataUrl={pairing.qrDataUrl}
                 status={pairing.status}
+                stage={pairing.stage}
+                detail={pairing.detail}
                 androidIp={pairing.androidIp}
                 error={pairing.error}
                 onStart={pairing.startPairing}

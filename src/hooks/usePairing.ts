@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import type { PairingStatus, StartPairingResult } from '../../shared/types'
 
 type PairingState = {
-  status: 'idle' | 'waiting' | 'pairing' | 'success' | 'error'
+  status: 'idle' | 'waiting' | 'pairing' | 'connecting' | 'success' | 'error'
+  stage?: PairingStatus['stage']
+  detail: string | null
   qrDataUrl: string | null
   androidIp: string | null
   error: string | null
@@ -10,6 +12,8 @@ type PairingState = {
 
 const INITIAL: PairingState = {
   status: 'idle',
+  stage: undefined,
+  detail: null,
   qrDataUrl: null,
   androidIp: null,
   error: null,
@@ -24,6 +28,8 @@ export function usePairing() {
       setState(prev => ({
         ...prev,
         status: status.status,
+        stage: status.stage,
+        detail: status.detail ?? prev.detail,
         androidIp: status.androidIp ?? prev.androidIp,
         error: status.error ?? null,
       }))
@@ -33,12 +39,26 @@ export function usePairing() {
 
   const startPairing = useCallback(async () => {
     if (!window.electronAPI) return
-    setState({ status: 'waiting', qrDataUrl: null, androidIp: null, error: null })
+    setState({
+      status: 'waiting',
+      stage: 'waiting_for_scan',
+      detail: 'Preparing QR pairing...',
+      qrDataUrl: null,
+      androidIp: null,
+      error: null,
+    })
     const result = await window.electronAPI.pairing.start()
     if (result.success && result.data) {
       setState(prev => ({ ...prev, qrDataUrl: result.data!.qrDataUrl }))
     } else {
-      setState({ status: 'error', qrDataUrl: null, androidIp: null, error: result.error ?? 'Failed to start pairing' })
+      setState({
+        status: 'error',
+        stage: 'error',
+        detail: null,
+        qrDataUrl: null,
+        androidIp: null,
+        error: result.error ?? 'Failed to start pairing',
+      })
     }
   }, [])
 

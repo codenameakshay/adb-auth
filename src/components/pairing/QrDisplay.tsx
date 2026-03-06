@@ -3,14 +3,16 @@ import { cn } from '../../lib/utils'
 
 interface QrDisplayProps {
   qrDataUrl: string | null
-  status: 'idle' | 'waiting' | 'pairing' | 'success' | 'error'
+  status: 'idle' | 'waiting' | 'pairing' | 'connecting' | 'success' | 'error'
+  stage?: 'waiting_for_scan' | 'waiting_for_pairing_service' | 'pairing' | 'waiting_for_connect_service' | 'connecting' | 'success' | 'error'
+  detail: string | null
   androidIp: string | null
   error: string | null
   onStart: () => void
   onCancel: () => void
 }
 
-export function QrDisplay({ qrDataUrl, status, androidIp, error, onStart, onCancel }: QrDisplayProps) {
+export function QrDisplay({ qrDataUrl, status, stage, detail, androidIp, error, onStart, onCancel }: QrDisplayProps) {
   if (status === 'idle') {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
@@ -91,10 +93,10 @@ export function QrDisplay({ qrDataUrl, status, androidIp, error, onStart, onCanc
 
         {status === 'waiting' && <div className="absolute inset-0 animate-pulse border-2 border-green-300/35 rounded-2xl" />}
 
-        {status === 'pairing' && (
+        {(status === 'pairing' || status === 'connecting') && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/55">
             <Loader2 className="h-8 w-8 animate-spin text-blue-300" />
-            <p className="text-sm font-semibold text-white">Pairing...</p>
+            <p className="text-sm font-semibold text-white">{status === 'connecting' ? 'Connecting...' : 'Pairing...'}</p>
           </div>
         )}
       </div>
@@ -102,13 +104,14 @@ export function QrDisplay({ qrDataUrl, status, androidIp, error, onStart, onCanc
       <div className="max-w-md text-center">
         {status === 'waiting' && (
           <>
-            <p className="mb-1.5 text-2xl font-semibold text-[var(--text-primary)]">Waiting for Android device scan...</p>
-            <p className="text-sm text-[var(--text-muted)]">
-              Open Wireless Debugging on phone and select Pair device with QR code.
+            <p className="mb-1.5 text-2xl font-semibold text-[var(--text-primary)]">
+              {stage === 'waiting_for_connect_service' ? 'Waiting for debug endpoint...' : 'Waiting for Android device scan...'}
             </p>
+            <p className="text-sm text-[var(--text-muted)]">{detail || 'Open Wireless Debugging on phone and select Pair device with QR code.'}</p>
           </>
         )}
-        {status === 'pairing' && <p className="text-sm text-blue-200">Completing pairing handshake...</p>}
+        {status === 'pairing' && <p className="text-sm text-blue-200">{detail || 'Completing pairing handshake...'}</p>}
+        {status === 'connecting' && <p className="text-sm text-blue-200">{detail || 'Connecting to wireless debugger...'}</p>}
       </div>
 
       <button onClick={onCancel} className="ui-btn ui-btn-secondary min-h-10 px-5 text-xs">

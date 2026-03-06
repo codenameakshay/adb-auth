@@ -9,6 +9,7 @@ interface ManualPairFormProps {
 export function ManualPairForm({ onSuccess, onError }: ManualPairFormProps) {
   const [ip, setIp] = useState('')
   const [port, setPort] = useState('')
+  const [debugPort, setDebugPort] = useState('')
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -24,7 +25,26 @@ export function ManualPairForm({ onSuccess, onError }: ManualPairFormProps) {
         return
       }
 
-      onSuccess(pairResult.data || 'Device paired successfully')
+      if (debugPort.trim()) {
+        const connectResult = await window.electronAPI.adb.connect(ip, parseInt(debugPort.trim(), 10))
+        if (!connectResult.success) {
+          onError(connectResult.error || 'Paired, but failed to connect using debug port')
+          return
+        }
+        onSuccess(connectResult.data || 'Device paired and connected')
+        return
+      }
+
+      const autoConnect = await window.electronAPI.adb.autoConnect(ip)
+      if (!autoConnect.success) {
+        onError(
+          autoConnect.error ||
+          'Paired, but could not auto-connect. Enter the debug port from your phone and try again.'
+        )
+        return
+      }
+
+      onSuccess(autoConnect.data || 'Device paired and connected')
     } catch (err) {
       onError(String(err))
     } finally {
@@ -79,6 +99,20 @@ export function ManualPairForm({ onSuccess, onError }: ManualPairFormProps) {
           placeholder="123456"
           maxLength={6}
           className="ui-input font-code text-center text-2xl tracking-[0.3em]"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="ui-label" htmlFor="debug-port">
+          Debug Port (optional but recommended)
+        </label>
+        <input
+          id="debug-port"
+          type="text"
+          value={debugPort}
+          onChange={(e) => setDebugPort(e.target.value.replace(/\D/g, ''))}
+          placeholder="e.g. 37147 from Wireless Debugging"
+          className="ui-input font-code text-sm"
         />
       </div>
 

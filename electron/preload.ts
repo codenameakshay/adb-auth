@@ -11,6 +11,8 @@ const api = {
       ipcRenderer.invoke(IPC.ADB_PAIR, host, port, code),
     connect: (host: string, port: number): Promise<IpcResult<string>> =>
       ipcRenderer.invoke(IPC.ADB_CONNECT, host, port),
+    autoConnect: (hostHint?: string): Promise<IpcResult<string>> =>
+      ipcRenderer.invoke(IPC.ADB_AUTO_CONNECT, hostHint),
     disconnect: (serial: string): Promise<IpcResult<string>> =>
       ipcRenderer.invoke(IPC.ADB_DISCONNECT, serial),
     getPath: (): Promise<IpcResult<string | null>> =>

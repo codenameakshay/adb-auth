@@ -29,7 +29,16 @@ export interface IpcResult<T = void> {
 }
 
 export interface PairingStatus {
-  status: 'waiting' | 'pairing' | 'success' | 'error'
+  status: 'waiting' | 'pairing' | 'connecting' | 'success' | 'error'
+  stage?:
+    | 'waiting_for_scan'
+    | 'waiting_for_pairing_service'
+    | 'pairing'
+    | 'waiting_for_connect_service'
+    | 'connecting'
+    | 'success'
+    | 'error'
+  detail?: string
   androidIp?: string
   error?: string
 }

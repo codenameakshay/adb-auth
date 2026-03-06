@@ -3,6 +3,7 @@ export const IPC = {
   ADB_GET_DEVICES:  'adb:get-devices',
   ADB_PAIR:         'adb:pair',
   ADB_CONNECT:      'adb:connect',
+  ADB_AUTO_CONNECT: 'adb:auto-connect',
   ADB_DISCONNECT:   'adb:disconnect',
   ADB_GET_PATH:     'adb:get-path',
   ADB_VERIFY_PATH:  'adb:verify-path',
