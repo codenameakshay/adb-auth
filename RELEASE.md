@@ -11,15 +11,21 @@
 - Validate pairing manually (QR + manual + fallback).
 - Review `SECURITY_REVIEW.md` and `SECURITY.md`.
 
-## Publish Source Release
-1. Create a release branch/tag from `main`.
-2. Push tag to GitHub.
-3. Draft GitHub Release notes:
-   - Features
-   - Bug fixes
-   - Breaking changes
-   - Known limitations (if any)
+## Publish via GitHub Actions
+1. Ensure changes are merged to `main`.
+2. Create and push a semantic tag:
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+3. The `Release` workflow (`.github/workflows/release.yml`) will:
+   - build Linux AppImage and Windows NSIS installer
+   - upload artifacts
+   - create/update GitHub Release with generated notes.
 
-## Optional: Binary Packaging
-- Run `npm run dist` in a clean native environment for target OS.
-- Upload generated artifacts from `dist/` to GitHub Release.
+## Manual Trigger (Optional)
+- Run `Release` workflow from GitHub Actions UI with `tag_name` input to republish artifacts for an existing tag.
+
+## Notes
+- Release workflow currently targets Linux + Windows.
+- macOS release is intentionally excluded because code-signing/notarization setup is required.
