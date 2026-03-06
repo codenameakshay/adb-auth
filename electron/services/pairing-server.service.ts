@@ -2,6 +2,10 @@ import { EventEmitter } from 'node:events'
 import * as net from 'node:net'
 import * as tls from 'node:tls'
 import * as crypto from 'node:crypto'
+import * as fs from 'node:fs'
+import * as os from 'node:os'
+import * as path from 'node:path'
+import { execFileSync } from 'node:child_process'
 import { p256 } from '@noble/curves/p256'
 import type { PairingStatus, StartPairingResult } from '../../shared/types.js'
 
@@ -41,73 +45,45 @@ async function getFreePort(): Promise<number> {
 }
 
 function generateSelfSignedCert(): { key: string; cert: string } {
-  // Generate RSA key pair for TLS
-  const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
-    modulusLength: 2048,
-  })
+  // Generate cert/key pair via openssl.
+  // This guarantees valid PEM material for tls.createServer.
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'adb-auth-pairing-'))
+  const keyPath = path.join(tmpDir, 'pairing-key.pem')
+  const certPath = path.join(tmpDir, 'pairing-cert.pem')
 
-  // Create a minimal self-signed certificate
-  // In production this would use a proper X.509 generator
-  // For now we use node's built-in crypto to generate a cert-like structure
-  const privateKeyPem = privateKey.export({ type: 'pkcs8', format: 'pem' }) as string
-  const publicKeyPem = publicKey.export({ type: 'spki', format: 'pem' }) as string
-
-  // Generate a simple self-signed cert using openssl via exec if available,
-  // otherwise use a pre-generated test cert for development
-  // NOTE: Real production would use a proper cert generator library
-  const cert = generateMinimalCert(privateKey, publicKey)
-
-  return { key: privateKeyPem, cert }
-}
-
-function generateMinimalCert(privateKey: crypto.KeyObject, publicKey: crypto.KeyObject): string {
-  // Use Node.js X509Certificate if available, otherwise create via openssl
-  // For simplicity in this implementation, we'll use a test approach
-  // Real implementation would use something like @peculiar/x509 or forge
   try {
-    const { execFileSync } = require('node:child_process')
-    const tempDir = require('node:os').tmpdir()
-    const keyPath = require('node:path').join(tempDir, 'adb-auth-key.pem')
-    const certPath = require('node:path').join(tempDir, 'adb-auth-cert.pem')
-    const fs = require('node:fs')
+    execFileSync(
+      'openssl',
+      [
+        'req',
+        '-x509',
+        '-newkey',
+        'rsa:2048',
+        '-nodes',
+        '-keyout',
+        keyPath,
+        '-out',
+        certPath,
+        '-days',
+        '365',
+        '-subj',
+        '/CN=ADB Auth/O=ADB Auth/C=US',
+      ],
+      { windowsHide: true, timeout: 15000, stdio: 'pipe' }
+    )
 
-    const keyPem = privateKey.export({ type: 'pkcs8', format: 'pem' }) as string
-    fs.writeFileSync(keyPath, keyPem)
-
-    execFileSync('openssl', [
-      'req', '-new', '-x509',
-      '-key', keyPath,
-      '-out', certPath,
-      '-days', '365',
-      '-subj', '/CN=ADB Auth/O=ADB Auth/C=US',
-    ], { windowsHide: true, timeout: 10000 })
-
+    const key = fs.readFileSync(keyPath, 'utf-8')
     const cert = fs.readFileSync(certPath, 'utf-8')
-    fs.unlinkSync(keyPath)
-    fs.unlinkSync(certPath)
-    return cert
-  } catch {
-    // Fallback: use a hardcoded development certificate
-    // In production this would be replaced with proper cert generation
-    return FALLBACK_SELF_SIGNED_CERT
+    return { key, cert }
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err)
+    throw new Error(`Failed to generate TLS certificate for pairing (openssl): ${reason}`)
+  } finally {
+    try { fs.unlinkSync(keyPath) } catch { /* ignore */ }
+    try { fs.unlinkSync(certPath) } catch { /* ignore */ }
+    try { fs.rmdirSync(tmpDir) } catch { /* ignore */ }
   }
 }
-
-// Fallback development cert (NOT for production use)
-const FALLBACK_SELF_SIGNED_CERT = `-----BEGIN CERTIFICATE-----
-MIICpDCCAYwCCQDU+pQ4pHgSpDANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAls
-b2NhbGhvc3QwHhcNMjQwMTAxMDAwMDAwWhcNMjUwMTAxMDAwMDAwWjAUMRIwEAYD
-VQQDDAlsb2NhbGhvc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC7
-o4qne60TB3wolpFKZDfxjFaONqJBBxuJGRkisOUHANd9JNrBsTEbFWWLJKyBWDm
-o3GfIWFKOcOSEKoYDlXFr+hgzHx0l2R7R8U5N3RmQPJJ+NiJA5JkVqiHmX3Yj9
-aWFPBmP7lf7v7K8X5D1p4sV+dN8bEUMqq5YVAO0j0fkF0k4T6ZGjDYLN5x7T2X
-kMeN5eZ3Y2d4VEaqnKm4OYI9ZUq9BFRV9dOEDXHAJFR7JKTQ5ZNPYVUAQF9Hy8
-R7U5tF7cZrM5Y3bPWyR5UkR8D1VN8mOhKvQyQNh+9Y1EE6+3C7f6L4D4sJMn3r
-P7YkVkHXzlFtAgMBAAEwDQYJKoZIhvcNAQELBQADggEBABDC0mGvbz3JrNEf7FJD
-7Gq4O9BqJrH0xhf5X4Z8dCFqlSMa9z3FpHyKjS6KlJeJZbFDdYALBjQVS5n5KdT
-hVSp3H1PZWK8r3mCn1lGMf5AQS+ZJdUSDEiJkjODTnKJuRQwF6D+4xk4Y2sM3L
-dA5vfPJwlqBONOBRe9OGeLy8U7UJRyJPvSH+K2DnNMJ+cP9JkMFyP6dOsVSDJAk
------END CERTIFICATE-----`
 
 class PairingServerService extends EventEmitter {
   private tlsServer: tls.Server | null = null
