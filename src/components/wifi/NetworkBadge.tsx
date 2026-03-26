@@ -33,7 +33,7 @@ export function NetworkBadge() {
   const value = (
     <span
       className={cn(
-        'min-w-0 truncate font-code tabular-nums',
+        'min-w-0 truncate tabular-nums',
         copied ? 'text-app-accent-green' : 'text-app-text-secondary'
       )}
     >

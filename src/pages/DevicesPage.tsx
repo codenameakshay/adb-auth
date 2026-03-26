@@ -19,6 +19,7 @@ function DevicesLoadingHints() {
   const [idx, setIdx] = useState(0)
   useEffect(() => {
     const id = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return
       setIdx((i) => (i + 1) % LOADING_HINTS.length)
     }, 2400)
     return () => window.clearInterval(id)

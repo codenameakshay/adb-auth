@@ -1,5 +1,5 @@
 import { Smartphone, Wifi, Copy, PlugZap, Unplug, AlertTriangle } from 'lucide-react'
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { DeviceStatusBadge } from './DeviceStatusBadge'
 import { cn } from '../../lib/utils'
 import type { AdbDevice } from '../../../shared/types'
@@ -12,7 +12,7 @@ interface DeviceCardProps {
   onDisconnect: (serial: string) => Promise<any>
 }
 
-export function DeviceCard({ device, onConnect, onDisconnect }: DeviceCardProps) {
+export const DeviceCard = memo(function DeviceCard({ device, onConnect, onDisconnect }: DeviceCardProps) {
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -106,4 +106,4 @@ export function DeviceCard({ device, onConnect, onDisconnect }: DeviceCardProps)
       </div>
     </article>
   )
-}
+})

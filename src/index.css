@@ -403,6 +403,24 @@ input:focus-visible {
   color: var(--text-secondary);
 }
 
+button.ui-chip {
+  cursor: pointer;
+  text-align: inherit;
+  transition:
+    border-color var(--dur-fast) var(--ease-out-quart),
+    background-color var(--dur-fast) var(--ease-out-quart),
+    transform var(--dur-fast) var(--ease-out-quart);
+}
+
+button.ui-chip:hover:not(:disabled) {
+  border-color: rgba(155, 183, 226, 0.4);
+  background: rgba(20, 36, 56, 0.88);
+}
+
+button.ui-chip:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
 .ui-banner {
   border-radius: var(--radius-lg);
   border: 1px solid;

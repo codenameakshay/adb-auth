@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import type { AdbDevice } from '../../shared/types'
 
 function deviceRowEqual(a: AdbDevice, b: AdbDevice): boolean {
@@ -29,6 +29,7 @@ export function useDevices(intervalMs: number = 3000) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const timerRef = useRef<number | null>(null)
+  const visibleRef = useRef(typeof document !== 'undefined' && document.visibilityState === 'visible')
 
   const fetchDevices = useCallback(async (options?: { silent?: boolean }) => {
     if (!window.electronAPI) return
@@ -52,9 +53,18 @@ export function useDevices(intervalMs: number = 3000) {
   }, [])
 
   useEffect(() => {
+    const onVisibility = () => {
+      visibleRef.current = document.visibilityState === 'visible'
+      if (visibleRef.current) void fetchDevices({ silent: true })
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [fetchDevices])
+
+  useEffect(() => {
     void fetchDevices()
     timerRef.current = window.setInterval(() => {
-      void fetchDevices({ silent: true })
+      if (visibleRef.current) void fetchDevices({ silent: true })
     }, intervalMs)
     return () => {
       if (timerRef.current !== null) window.clearInterval(timerRef.current)
@@ -81,5 +91,15 @@ export function useDevices(intervalMs: number = 3000) {
     [fetchDevices]
   )
 
-  return { devices, loading, error, refresh, connectDevice, disconnectDevice }
+  return useMemo(
+    () => ({
+      devices,
+      loading,
+      error,
+      refresh,
+      connectDevice,
+      disconnectDevice,
+    }),
+    [devices, loading, error, refresh, connectDevice, disconnectDevice]
+  )
 }
