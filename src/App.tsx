@@ -4,19 +4,19 @@ import { StatusBar } from './components/layout/StatusBar'
 import { DevicesPage } from './pages/DevicesPage'
 import { PairPage } from './pages/PairPage'
 import { SettingsPage } from './pages/SettingsPage'
-import { useDevices } from './hooks/useDevices'
+import { DevicesProvider, useDevicesContext } from './context/DevicesProvider'
 import { useSettings } from './hooks/useSettings'
+import type { AppSettings } from '../shared/types'
 
-function AppContent() {
-  const { settings } = useSettings()
-  const { devices } = useDevices(settings.refreshInterval)
+function AppShell({ settings }: { settings: AppSettings }) {
+  const { devices } = useDevicesContext()
   const connectedCount = devices.filter((d) => d.status === 'device').length
 
   return (
-    <div className="app-shell relative flex h-screen w-screen overflow-hidden select-none p-2.5 md:p-3.5">
+    <div className="app-shell relative flex h-screen w-screen overflow-hidden p-2 sm:p-2.5 md:p-3.5">
       {/* Decorative glow layers */}
-      <div aria-hidden className="pointer-events-none absolute -top-28 -left-24 h-80 w-80 rounded-full bg-blue-500/15 blur-3xl" />
-      <div aria-hidden className="pointer-events-none absolute -right-24 top-0 h-72 w-72 rounded-full bg-green-500/15 blur-3xl" />
+      <div aria-hidden className="ui-deco-glow ui-deco-glow--blue" />
+      <div aria-hidden className="ui-deco-glow ui-deco-glow--green" />
 
       {/* Skip link for keyboard users */}
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] ui-btn ui-btn-secondary">
@@ -25,13 +25,13 @@ function AppContent() {
 
       {/* Title bar drag area */}
       <div
-        className="fixed left-0 right-0 top-0 z-50 h-8"
+        className="fixed left-0 right-0 top-0 z-50 h-8 select-none"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       />
 
       <Sidebar />
 
-      <div className="relative z-10 ml-2.5 flex min-w-0 flex-1 flex-col overflow-hidden pt-8 md:ml-3.5">
+      <div className="relative z-10 ml-2 flex min-w-0 flex-1 flex-col overflow-hidden pt-8 sm:ml-2.5 md:ml-3.5">
         <main id="main-content" className="glass-panel flex min-h-0 flex-1 flex-col overflow-hidden">
           <Routes>
             <Route path="/" element={<DevicesPage />} />
@@ -43,6 +43,16 @@ function AppContent() {
         </main>
       </div>
     </div>
+  )
+}
+
+function AppContent() {
+  const { settings } = useSettings()
+
+  return (
+    <DevicesProvider refreshInterval={settings.refreshInterval}>
+      <AppShell settings={settings} />
+    </DevicesProvider>
   )
 }
 

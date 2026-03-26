@@ -33,7 +33,7 @@ export function SettingsPage() {
     if (result.success && result.data) {
       setAdbStatus('valid')
       await updateSettings({ adbPath: adbPathInput.trim() })
-      showToast('ADB path saved')
+      showToast('ADB path saved. The footer should show Found after the next refresh.')
     } else {
       setAdbStatus('invalid')
     }
@@ -43,7 +43,11 @@ export function SettingsPage() {
     setServerBusy('kill')
     try {
       const result = await window.electronAPI.adb.killServer()
-      showToast(result.success ? 'ADB server stopped' : result.error || 'Failed to stop server')
+      showToast(
+        result.success
+          ? 'ADB server stopped. Start it again if devices stop responding.'
+          : result.error || 'Could not stop the ADB server. Try again or restart the app.'
+      )
     } finally {
       setServerBusy(null)
     }
@@ -53,7 +57,11 @@ export function SettingsPage() {
     setServerBusy('start')
     try {
       const result = await window.electronAPI.adb.startServer()
-      showToast(result.success ? 'ADB server started' : result.error || 'Failed to start server')
+      showToast(
+        result.success
+          ? 'ADB server is running again.'
+          : result.error || 'Could not start the ADB server. Check the path above.'
+      )
     } finally {
       setServerBusy(null)
     }
@@ -61,22 +69,30 @@ export function SettingsPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <Header title="Settings" />
+      <Header
+        title="Settings"
+        subtitle="All local: path to adb, how often the device list refreshes, tray behavior, and starting or stopping the background ADB server."
+      />
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-8">
         {toast && (
-          <div className="ui-banner ui-banner-neutral mb-4" role="status" aria-live="polite">
+          <div className="ui-banner ui-banner-neutral ui-enter-soft mb-6" role="status" aria-live="polite">
             {toast}
           </div>
         )}
 
-        <div className="mx-auto max-w-2xl space-y-5">
-          <section className="glass-panel-strong space-y-3 p-5">
-            <h2 className="text-sm font-semibold text-[var(--text-primary)]">ADB Binary</h2>
-            <p className="ui-help">Path to the adb binary. Auto-detected from PATH or common SDK locations.</p>
+        <div className="mx-auto flex max-w-2xl flex-col gap-6 sm:gap-8">
+          <section className="glass-panel-strong space-y-4 p-5 sm:p-6">
+            <div>
+              <h2 className="text-sm font-semibold text-app-text-primary">ADB executable</h2>
+              <p className="ui-help mt-1">
+                Full path to the <span className="font-code text-[length:inherit]">adb</span> executable inside Android <strong className="font-medium text-app-text-secondary">platform-tools</strong>. Leave blank if{' '}
+                <span className="font-code text-[length:inherit]">adb</span> already works in a terminal (we still probe common SDK locations).
+              </p>
+            </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="relative flex-1">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+              <div className="relative min-w-0 flex-1">
                 <input
                   type="text"
                   value={adbPathInput}
@@ -84,38 +100,56 @@ export function SettingsPage() {
                     setAdbPathInput(e.target.value)
                     setAdbStatus('idle')
                   }}
-                  placeholder="/home/user/Android/Sdk/platform-tools/adb"
+                  placeholder="/home/you/Android/Sdk/platform-tools/adb"
                   className="ui-input font-code pr-9 text-sm"
+                  aria-describedby="adb-path-hint"
                 />
-                {adbStatus === 'valid' && <CheckCircle2 className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-green-300" />}
-                {adbStatus === 'invalid' && <XCircle className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-red-200" />}
+                {adbStatus === 'valid' && (
+                  <CheckCircle2 className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-app-accent-green" aria-hidden />
+                )}
+                {adbStatus === 'invalid' && (
+                  <XCircle className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-app-danger" aria-hidden />
+                )}
               </div>
-              <button onClick={verifyPath} className="ui-btn ui-btn-secondary sm:min-w-[108px]">
-                Verify
+              <button type="button" onClick={verifyPath} className="ui-btn ui-btn-secondary shrink-0 sm:min-w-[7.5rem]">
+                Check and save
               </button>
             </div>
 
+            <p id="adb-path-hint" className="text-xs text-app-text-faint">
+              Example on Windows: <span className="font-code">C:\Users\You\AppData\Local\Android\Sdk\platform-tools\adb.exe</span>
+            </p>
+
             {adbStatus === 'invalid' && (
-              <p className="text-xs text-red-200" role="alert">
-                Could not verify this path. Make sure it points to a valid adb binary.
+              <p className="text-sm text-app-danger" role="alert">
+                That path doesn’t look like a working adb. Double-check the file exists and that you can run it in a terminal.
               </p>
             )}
 
-            {settings.adbPath && <p className="font-code text-xs text-green-300">Current: {settings.adbPath}</p>}
+            {settings.adbPath && (
+              <p className="font-code text-xs text-app-accent-green">
+                Saved: {settings.adbPath}
+              </p>
+            )}
           </section>
 
-          <section className="glass-panel-strong space-y-3 p-5">
-            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Device Refresh Interval</h2>
-            <p className="ui-help">How often the app polls for connected devices.</p>
+          <section className="glass-panel-strong space-y-4 p-5 sm:p-6">
+            <div>
+              <h2 className="text-sm font-semibold text-app-text-primary">Device list refresh</h2>
+              <p className="ui-help mt-1">
+                How often to poll ADB for the device list. Shorter is snappier; longer is a bit easier on CPU.
+              </p>
+            </div>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {INTERVALS.map(({ label, value }) => (
                 <button
+                  type="button"
                   key={value}
                   onClick={() => updateSettings({ refreshInterval: value })}
                   className={cn(
-                    'ui-btn min-h-11 text-sm',
-                    settings.refreshInterval === value ? 'ui-btn-secondary border-blue-300/35 text-white' : 'ui-btn-secondary text-[var(--text-muted)]'
+                    'ui-btn ui-btn-secondary min-h-11 text-sm',
+                    settings.refreshInterval === value ? 'ui-btn--segment-active' : 'text-app-text-muted'
                   )}
                 >
                   {label}
@@ -124,45 +158,43 @@ export function SettingsPage() {
             </div>
           </section>
 
-          <section className="glass-panel-strong p-5">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-sm font-semibold text-[var(--text-primary)]">Minimize to Tray on Close</h2>
-                <p className="ui-help">Keep app running in system tray after window close.</p>
+          <section className="glass-panel-strong p-5 sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 flex-1 space-y-1">
+                <h2 className="text-sm font-semibold text-app-text-primary">Close window → keep running in tray</h2>
+                <p className="ui-help">When on, closing the window keeps the app running in the system tray instead of exiting.</p>
               </div>
               <button
+                type="button"
                 onClick={() => updateSettings({ minimizeToTray: !settings.minimizeToTray })}
                 className={cn(
-                  'relative h-7 w-12 rounded-full border transition-colors duration-200',
-                  settings.minimizeToTray
-                    ? 'border-green-300/40 bg-green-500/40'
-                    : 'border-slate-300/25 bg-slate-700/70'
+                  'ui-toggle-track self-start sm:self-center',
+                  settings.minimizeToTray ? 'ui-toggle-track--on' : 'ui-toggle-track--off'
                 )}
-                aria-label="Toggle minimize to tray"
+                aria-label="Run in system tray when the window is closed"
                 aria-pressed={settings.minimizeToTray}
               >
-                <span
-                  className={cn(
-                    'absolute top-1 h-5 w-5 rounded-full bg-white transition-transform duration-200',
-                    settings.minimizeToTray ? 'left-6' : 'left-1'
-                  )}
-                />
+                <span className="ui-toggle-thumb" />
               </button>
             </div>
           </section>
 
-          <section className="glass-panel-strong space-y-3 p-5">
-            <h2 className="text-sm font-semibold text-[var(--text-primary)]">ADB Server</h2>
-            <p className="ui-help">Control the ADB background server process.</p>
+          <section className="glass-panel-strong space-y-4 p-5 sm:p-6">
+            <div>
+              <h2 className="text-sm font-semibold text-app-text-primary">ADB background server</h2>
+              <p className="ui-help mt-1">
+                adb runs a small background server. Stop it to clear odd state; start it again if terminals or this app stop seeing devices.
+              </p>
+            </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
-              <button onClick={killServer} disabled={!!serverBusy} className="ui-btn ui-btn-danger sm:min-w-[156px]">
-                {serverBusy === 'kill' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ServerOff className="h-4 w-4" />}
-                Kill Server
+              <button type="button" onClick={killServer} disabled={!!serverBusy} className="ui-btn ui-btn-danger sm:min-w-[10rem]">
+                {serverBusy === 'kill' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ServerOff className="h-4 w-4" aria-hidden />}
+                Stop server
               </button>
-              <button onClick={startServer} disabled={!!serverBusy} className="ui-btn ui-btn-primary sm:min-w-[156px]">
-                {serverBusy === 'start' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Server className="h-4 w-4" />}
-                Start Server
+              <button type="button" onClick={startServer} disabled={!!serverBusy} className="ui-btn ui-btn-primary sm:min-w-[10rem]">
+                {serverBusy === 'start' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Server className="h-4 w-4" aria-hidden />}
+                Start server
               </button>
             </div>
           </section>
