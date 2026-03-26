@@ -2,6 +2,7 @@
 
 ## Pre-release
 - Update version in `package.json`.
+- If users will notice behavior or UI changes, update [README.md](README.md) (features, troubleshooting, tray section) and note changes in release notes / changelog if you maintain one.
 - Run quality checks:
   - `npm ci`
   - `npm run lint`
@@ -9,6 +10,7 @@
   - `npm run build:renderer`
   - `npm run build:electron`
 - Validate pairing manually (QR + manual + fallback).
+- Spot-check **tray menu** actions (navigate, refresh, copy IP, restart ADB) on the target OS.
 - Review `SECURITY_REVIEW.md` and `SECURITY.md`.
 
 ## Publish via GitHub Actions
