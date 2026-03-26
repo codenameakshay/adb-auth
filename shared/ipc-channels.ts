@@ -21,6 +21,9 @@ export const IPC = {
   // Settings
   SETTINGS_GET:     'settings:get',
   SETTINGS_SET:     'settings:set',
+  // Tray / main → renderer
+  APP_NAVIGATE:         'app:navigate',
+  APP_REFRESH_DEVICES:  'app:refresh-devices',
 } as const
 
 export type IpcChannel = typeof IPC[keyof typeof IPC]

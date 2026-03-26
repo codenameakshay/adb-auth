@@ -22,3 +22,5 @@ Maintainers will acknowledge reports promptly and provide remediation updates.
 - No remote backend and no telemetry.
 - No bundled API keys or secrets.
 - Settings are stored locally in Electron user-data path.
+- The **system tray** menu can copy your machine’s LAN IP to the **system clipboard** and may show **local OS notifications** for failures (e.g. ADB restart errors). No data is sent to a third party by those actions.
+- **mDNS** discovery listens on the local network for wireless-debug advertisements; it does not upload discovered data off-device.

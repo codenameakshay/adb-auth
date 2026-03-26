@@ -1,5 +1,5 @@
 import { Smartphone, Wifi, Copy, PlugZap, Unplug, AlertTriangle } from 'lucide-react'
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { DeviceStatusBadge } from './DeviceStatusBadge'
 import { cn } from '../../lib/utils'
 import type { AdbDevice } from '../../../shared/types'
@@ -12,7 +12,7 @@ interface DeviceCardProps {
   onDisconnect: (serial: string) => Promise<any>
 }
 
-export function DeviceCard({ device, onConnect, onDisconnect }: DeviceCardProps) {
+export const DeviceCard = memo(function DeviceCard({ device, onConnect, onDisconnect }: DeviceCardProps) {
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -47,59 +47,58 @@ export function DeviceCard({ device, onConnect, onDisconnect }: DeviceCardProps)
     <article
       className={cn(
         'glass-panel-strong flex items-start gap-4 p-4 transition-colors duration-200',
-        device.status === 'device' ? 'border-green-300/20' : 'border-white/10'
+        device.status === 'device' && 'ui-surface-connected'
       )}
     >
       <div
         className={cn(
-          'flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border',
-          device.isWifi
-            ? 'border-blue-300/25 bg-blue-500/15 text-blue-200'
-            : 'border-slate-300/20 bg-slate-700/40 text-slate-200'
+          'ui-icon-tile ui-icon-tile--md',
+          device.isWifi ? 'ui-icon-tile--accent-blue' : 'ui-icon-tile--neutral'
         )}
       >
-        {device.isWifi ? <Wifi className="h-5 w-5" /> : <Smartphone className="h-5 w-5" />}
+        {device.isWifi ? <Wifi className="h-5 w-5" aria-hidden /> : <Smartphone className="h-5 w-5" aria-hidden />}
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="mb-1 flex flex-wrap items-center gap-2">
-          <h3 className="truncate text-sm font-semibold text-[var(--text-primary)]">{displayName}</h3>
+          <h3 className="truncate text-sm font-semibold text-app-text-primary">{displayName}</h3>
           <DeviceStatusBadge status={device.status} />
         </div>
 
         <button
+          type="button"
           onClick={copySerial}
-          className="group flex min-h-9 items-center gap-1 text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--text-secondary)]"
+          className="group flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs text-app-text-muted transition-colors hover:bg-[var(--surface-hover-faint)] hover:text-app-text-secondary"
           aria-label="Copy device serial"
         >
-          {copied ? <span className="text-green-300">Copied serial</span> : <span className="font-code">{device.serial}</span>}
-          <Copy className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-80" />
+          {copied ? <span className="text-app-accent-green">Copied serial</span> : <span className="font-code">{device.serial}</span>}
+          <Copy className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-80" aria-hidden />
         </button>
 
         {device.isWifi && device.ip && (
-          <p className="font-code text-xs text-[var(--text-faint)]">
+          <p className="font-code text-xs text-app-text-faint">
             {device.ip}:{device.port}
           </p>
         )}
 
         {device.status === 'unauthorized' && (
-          <p className="mt-2 flex items-center gap-1 text-xs text-yellow-200" role="status" aria-live="polite">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            USB debugging authorization is required on the phone.
+          <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-app-warning" role="status" aria-live="polite">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>Unlock the phone and approve the <span className="font-medium">Allow USB debugging?</span> prompt—or revoke old keys in Developer options and reconnect.</span>
           </p>
         )}
       </div>
 
       <div className="flex flex-shrink-0 flex-col gap-2">
         {device.isWifi && device.status === 'device' && (
-          <button onClick={handleDisconnect} disabled={busy} className="ui-btn ui-btn-danger min-h-10 px-3 py-1.5 text-xs">
+          <button type="button" onClick={handleDisconnect} disabled={busy} className="ui-btn ui-btn-danger min-h-11 px-3 py-1.5 text-xs">
             <Unplug className="h-3.5 w-3.5" />
             Disconnect
           </button>
         )}
 
         {device.isWifi && device.status === 'offline' && device.ip && (
-          <button onClick={handleConnect} disabled={busy} className="ui-btn ui-btn-secondary min-h-10 px-3 py-1.5 text-xs">
+          <button type="button" onClick={handleConnect} disabled={busy} className="ui-btn ui-btn-secondary min-h-11 px-3 py-1.5 text-xs">
             <PlugZap className="h-3.5 w-3.5" />
             {busy ? 'Connecting...' : 'Reconnect'}
           </button>
@@ -107,4 +106,4 @@ export function DeviceCard({ device, onConnect, onDisconnect }: DeviceCardProps)
       </div>
     </article>
   )
-}
+})

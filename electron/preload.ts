@@ -62,6 +62,20 @@ const api = {
     set: (partial: Partial<AppSettings>): Promise<IpcResult<AppSettings>> =>
       ipcRenderer.invoke(IPC.SETTINGS_SET, partial),
   },
+
+  // Tray → renderer (one-way)
+  app: {
+    onNavigate: (cb: (path: string) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, path: string) => cb(path)
+      ipcRenderer.on(IPC.APP_NAVIGATE, handler)
+      return () => ipcRenderer.removeListener(IPC.APP_NAVIGATE, handler)
+    },
+    onRefreshDevices: (cb: () => void) => {
+      const handler = () => cb()
+      ipcRenderer.on(IPC.APP_REFRESH_DEVICES, handler)
+      return () => ipcRenderer.removeListener(IPC.APP_REFRESH_DEVICES, handler)
+    },
+  },
 }
 
 contextBridge.exposeInMainWorld('electronAPI', api)
