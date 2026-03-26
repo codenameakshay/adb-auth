@@ -1,10 +1,12 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage } from 'electron'
+import { app, BrowserWindow, Tray, Menu, nativeImage, clipboard, Notification } from 'electron'
 import * as path from 'node:path'
 import * as url from 'node:url'
+import { IPC } from '../shared/ipc-channels.js'
 import { registerAllHandlers } from './ipc/index.js'
 import { getStore } from './services/store.service.js'
 import { detectAdbPath } from './utils/adb-path.js'
-import { setAdbPath } from './services/adb.service.js'
+import { setAdbPath, killServer, startServer } from './services/adb.service.js'
+import * as wifi from './services/wifi.service.js'
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
 const isDev = !app.isPackaged
@@ -59,17 +61,97 @@ function createWindow(): void {
   })
 }
 
-function createTray(): void {
-  const iconPath = path.join(__dirname, '../../resources/tray-icon.png')
-  const icon = nativeImage.createFromPath(iconPath)
-  tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon)
+function showMainWindow(): void {
+  mainWindow?.show()
+  mainWindow?.focus()
+}
 
-  const contextMenu = Menu.buildFromTemplate([
+function navigateInApp(route: string): void {
+  showMainWindow()
+  mainWindow?.webContents.send(IPC.APP_NAVIGATE, route)
+}
+
+function refreshDevicesInApp(): void {
+  mainWindow?.webContents.send(IPC.APP_REFRESH_DEVICES)
+}
+
+function buildTrayMenu(): Menu {
+  return Menu.buildFromTemplate([
     {
       label: 'Open ADB Auth',
       click: () => {
-        mainWindow?.show()
-        mainWindow?.focus()
+        showMainWindow()
+      },
+    },
+    {
+      label: 'Hide window',
+      click: () => {
+        mainWindow?.hide()
+      },
+    },
+    { type: 'separator' },
+    {
+      label: 'Devices',
+      click: () => {
+        navigateInApp('/')
+      },
+    },
+    {
+      label: 'Pair over Wi‑Fi',
+      click: () => {
+        navigateInApp('/pair')
+      },
+    },
+    {
+      label: 'Settings',
+      click: () => {
+        navigateInApp('/settings')
+      },
+    },
+    { type: 'separator' },
+    {
+      label: 'Refresh device list',
+      click: () => {
+        refreshDevicesInApp()
+      },
+    },
+    {
+      label: 'Copy this computer’s IP',
+      click: async () => {
+        try {
+          const ip = await wifi.getLocalIp()
+          if (ip) {
+            clipboard.writeText(ip)
+            return
+          }
+          if (Notification.isSupported()) {
+            new Notification({
+              title: 'ADB Auth',
+              body: 'Could not detect a local IP address.',
+            }).show()
+          }
+        } catch {
+          if (Notification.isSupported()) {
+            new Notification({ title: 'ADB Auth', body: 'Could not copy IP address.' }).show()
+          }
+        }
+      },
+    },
+    {
+      label: 'Restart ADB server',
+      click: async () => {
+        try {
+          await killServer()
+          await startServer()
+          refreshDevicesInApp()
+        } catch (err) {
+          if (Notification.isSupported()) {
+            new Notification({
+              title: 'ADB Auth',
+              body: `Could not restart ADB: ${String(err)}`,
+            }).show()
+          }
+        }
       },
     },
     { type: 'separator' },
@@ -80,13 +162,18 @@ function createTray(): void {
       },
     },
   ])
+}
 
-  tray.setContextMenu(contextMenu)
+function createTray(): void {
+  const iconPath = path.join(__dirname, '../../resources/tray-icon.png')
+  const icon = nativeImage.createFromPath(iconPath)
+  tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon)
+
+  tray.setContextMenu(buildTrayMenu())
   tray.setToolTip('ADB Auth')
 
   tray.on('double-click', () => {
-    mainWindow?.show()
-    mainWindow?.focus()
+    showMainWindow()
   })
 }
 

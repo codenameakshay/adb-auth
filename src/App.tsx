@@ -1,5 +1,5 @@
-import { lazy, Suspense, useMemo } from 'react'
-import { HashRouter, Routes, Route } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useMemo } from 'react'
+import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Sidebar } from './components/layout/Sidebar'
 import { StatusBar } from './components/layout/StatusBar'
 import { DevicesProvider, useDevicesContext } from './context/DevicesProvider'
@@ -9,6 +9,33 @@ import type { AppSettings } from '../shared/types'
 const DevicesPage = lazy(() => import('./pages/DevicesPage').then((m) => ({ default: m.DevicesPage })))
 const PairPage = lazy(() => import('./pages/PairPage').then((m) => ({ default: m.PairPage })))
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
+
+const TRAY_ROUTES = new Set(['/', '/pair', '/settings'])
+
+/** Handles tray menu “navigate” / “refresh devices” sent from the main process. */
+function TrayCommandBridge() {
+  const navigate = useNavigate()
+  const { refresh } = useDevicesContext()
+
+  useEffect(() => {
+    const api = window.electronAPI?.app
+    if (!api) return
+
+    const offNav = api.onNavigate((path) => {
+      const normalized = path.startsWith('/') ? path : `/${path}`
+      if (TRAY_ROUTES.has(normalized)) navigate(normalized)
+    })
+    const offRefresh = api.onRefreshDevices(() => {
+      void refresh()
+    })
+    return () => {
+      offNav()
+      offRefresh()
+    }
+  }, [navigate, refresh])
+
+  return null
+}
 
 function RouteFallback() {
   return (
@@ -64,6 +91,7 @@ function AppContent() {
 
   return (
     <DevicesProvider refreshInterval={settings.refreshInterval}>
+      <TrayCommandBridge />
       <AppShell settings={settings} />
     </DevicesProvider>
   )
