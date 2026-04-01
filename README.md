@@ -47,6 +47,31 @@ For renderer-only (browser, no Electron shell):
 npm run dev:renderer
 ```
 
+## Native macOS notch app
+
+There is now a separate native macOS app prototype under `macos/ADBBuddyNotch/`. It is a SwiftUI/AppKit utility that sits in the notch area, shows QR pairing when no device is connected, and shows the current connected device when one is available.
+
+Build it:
+
+```bash
+cd macos/ADBBuddyNotch
+swift build
+```
+
+Run it locally:
+
+```bash
+cd macos/ADBBuddyNotch
+swift run ADBBuddyNotchApp
+```
+
+Run the native tests:
+
+```bash
+cd macos/ADBBuddyNotch
+swift test
+```
+
 ## Scripts
 
 | Command | Purpose |
