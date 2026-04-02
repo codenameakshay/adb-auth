@@ -13,14 +13,13 @@ enum NotchViewMode: Equatable {
 struct PanelLayout: Equatable {
     let size: CGSize
 
-    static let collapsed = PanelLayout(size: CGSize(width: 244, height: 38))
-    static let loading = PanelLayout(size: CGSize(width: 360, height: 150))
-    static let adbMissing = PanelLayout(size: CGSize(width: 420, height: 250))
-    static let pairing = PanelLayout(size: CGSize(width: 420, height: 520))
+    static let expandedOverlay = PanelLayout(size: OverlayLayout.expandedSurface)
+    static let loading = expandedOverlay
+    static let adbMissing = expandedOverlay
+    static let pairing = expandedOverlay
 
     static func connected(extraRows: Int) -> PanelLayout {
-        let cappedRows = min(extraRows, 3)
-        return PanelLayout(size: CGSize(width: 420, height: 220 + CGFloat(cappedRows * 44)))
+        expandedOverlay
     }
 }
 
@@ -48,7 +47,7 @@ final class NotchAppState: ObservableObject {
     @Published private(set) var runtimeError: String?
     @Published private(set) var settingsMessage: String?
     @Published private(set) var viewMode: NotchViewMode = .loading
-    @Published private(set) var panelLayout: PanelLayout = .collapsed
+    @Published private(set) var panelLayout: PanelLayout = .loading
 
     private let settingsStore = AppSettingsStore()
     private let adbClient: ADBClient
@@ -167,7 +166,11 @@ final class NotchAppState: ObservableObject {
         isExpanded.toggle()
     }
 
-    func collapse() {
+    func expand() {
+        isExpanded = true
+    }
+
+    func dismissExpanded() {
         isExpanded = false
     }
 
@@ -420,11 +423,6 @@ final class NotchAppState: ObservableObject {
             viewMode = .connected
         } else {
             viewMode = .pairing
-        }
-
-        if !isExpanded {
-            panelLayout = .collapsed
-            return
         }
 
         switch viewMode {

@@ -14,13 +14,16 @@ struct ADBBuddyNotchApp: App {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var panelController: NotchPanelController?
+    private var overlayController: OverlayController?
     private let store = NotchAppState()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
-        panelController = NotchPanelController(store: store)
-        panelController?.show()
-        store.launch()
+        _ = NSApp.setActivationPolicy(.accessory)
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.overlayController = OverlayController(store: self.store)
+            self.overlayController?.launch()
+            self.store.launch()
+        }
     }
 }

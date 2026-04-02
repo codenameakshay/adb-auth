@@ -2,66 +2,31 @@ import AppKit
 import ADBBuddyCore
 import SwiftUI
 
-struct NotchRootView: View {
+struct ExpandedOverlayView: View {
     @ObservedObject var store: NotchAppState
 
     var body: some View {
-        Group {
-            if store.isExpanded {
-                ExpandedNotchView(store: store)
-            } else {
-                CollapsedNotchView(store: store)
+        ZStack {
+            ScrollView(.vertical, showsIndicators: true) {
+                ExpandedOverlayContentView(store: store)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+
+            if store.isShowingSettings {
+                Color.black.opacity(0.5)
+                    .contentShape(Rectangle())
+                    .onTapGesture { store.isShowingSettings = false }
+
+                SettingsSheetView(store: store)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .shadow(color: .black.opacity(0.35), radius: 24, y: 8)
             }
         }
         .frame(width: store.panelLayout.size.width, height: store.panelLayout.size.height)
-        .sheet(isPresented: $store.isShowingSettings) {
-            SettingsSheetView(store: store)
-        }
     }
 }
 
-private struct CollapsedNotchView: View {
-    @ObservedObject var store: NotchAppState
-
-    var body: some View {
-        Button(action: store.toggleExpanded) {
-            HStack(spacing: 10) {
-                Circle()
-                    .fill(store.indicatorColor)
-                    .frame(width: 10, height: 10)
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(store.collapsedTitle)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text(store.collapsedSubtitle)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.white.opacity(0.72))
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 4)
-
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.76))
-            }
-            .padding(.horizontal, 14)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Color.black.opacity(0.92))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .strokeBorder(Color.white.opacity(0.08))
-                    )
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct ExpandedNotchView: View {
+private struct ExpandedOverlayContentView: View {
     @ObservedObject var store: NotchAppState
 
     var body: some View {
@@ -81,7 +46,7 @@ private struct ExpandedNotchView: View {
                 HStack(spacing: 8) {
                     HeaderIconButton(systemName: "arrow.clockwise", action: store.refreshNow)
                     HeaderIconButton(systemName: "gearshape", action: { store.isShowingSettings = true })
-                    HeaderIconButton(systemName: "xmark", action: store.collapse)
+                    HeaderIconButton(systemName: "xmark", action: store.dismissExpanded)
                 }
             }
 
@@ -107,7 +72,7 @@ private struct ExpandedNotchView: View {
             }
         }
         .padding(18)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .fill(
@@ -263,8 +228,14 @@ private struct SettingsSheetView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("ADB Buddy Settings")
-                .font(.system(size: 18, weight: .semibold))
+            HStack(alignment: .center) {
+                Text("ADB Buddy Settings")
+                    .font(.system(size: 18, weight: .semibold))
+                Spacer()
+                HeaderIconButton(systemName: "xmark") {
+                    store.isShowingSettings = false
+                }
+            }
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("ADB executable")

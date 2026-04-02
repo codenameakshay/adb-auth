@@ -28,5 +28,9 @@ let package = Package(
             name: "ADBBuddyCoreTests",
             dependencies: ["ADBBuddyCore"]
         ),
+        .testTarget(
+            name: "ADBBuddyNotchAppTests",
+            dependencies: ["ADBBuddyNotchApp"]
+        ),
     ]
 )
