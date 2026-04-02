@@ -158,9 +158,7 @@ final class NotchStripIconClusterView: NSView {
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
-        guard let superview else { return nil }
-        let local = convert(point, from: superview)
-        guard bounds.contains(local) else { return nil }
+        guard bounds.contains(point) else { return nil }
         return self
     }
 
@@ -258,17 +256,14 @@ final class NotchPanelRootView: NSView {
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
-        guard let superview else { return nil }
-        let local = convert(point, from: superview)
-
         if currentExpandRatio < 0.1 {
             // Collapsed: only icon box responds.
-            guard iconBox.frame.contains(local) else { return nil }
-            return iconCluster.hitTest(local)
+            guard iconBox.frame.contains(point) else { return nil }
+            return iconCluster.hitTest(iconCluster.convert(point, from: self))
         }
 
         // Expanded: full visible mask area responds.
-        guard bounds.contains(local) else { return nil }
+        guard bounds.contains(point) else { return nil }
         return super.hitTest(point)
     }
 
