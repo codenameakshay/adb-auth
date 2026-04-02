@@ -5,18 +5,19 @@ enum OverlayLayout {
 }
 
 enum OverlayGeometry {
-    static func expandedOverlayFrame(
-        anchorFrame: CGRect,
-        screenFrame: CGRect
+    /// Frame for the single notch panel in screen coordinates (AppKit: origin = bottom-left).
+    /// The panel's top edge is always flush with the screen top (screenMaxY).
+    static func panelFrame(
+        midX: CGFloat,
+        screenMaxY: CGFloat,
+        size: CGSize,
+        screenMinX: CGFloat,
+        screenMaxX: CGFloat,
+        horizontalMargin: CGFloat = 8
     ) -> CGRect {
-        let size = OverlayLayout.expandedSurface
-        let horizontalMargin: CGFloat = 12
-        let preferredX = anchorFrame.midX - size.width / 2
-        let maxX = screenFrame.maxX - size.width - horizontalMargin
-        let minX = screenFrame.minX + horizontalMargin
-        let x = min(max(preferredX, minX), maxX)
-        let y = max(screenFrame.minY + 12, anchorFrame.minY - size.height - 10)
-
+        let x = max(screenMinX + horizontalMargin,
+                    min(midX - size.width / 2, screenMaxX - size.width - horizontalMargin))
+        let y = screenMaxY - size.height
         return CGRect(x: x, y: y, width: size.width, height: size.height)
     }
 }
