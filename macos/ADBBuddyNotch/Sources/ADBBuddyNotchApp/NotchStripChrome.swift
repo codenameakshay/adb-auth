@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 /// AppKit-only strip control (no SwiftUI `NSHostingView`) so init cannot crash before a window exists.
 @MainActor
@@ -76,7 +77,6 @@ final class NotchStripIconClusterView: NSView {
         )
     }
 
-    /// Subviews (`NSImageView`, dot) would otherwise become the hit target; `mouseUp` would never reach this view.
     override func hitTest(_ point: NSPoint) -> NSView? {
         guard let superview else { return nil }
         let local = convert(point, from: superview)
@@ -94,18 +94,41 @@ final class NotchStripIconClusterView: NSView {
     }
 }
 
-/// Clickable only inside `iconContainer`; draws a menu-bar-height pill behind it.
-final class NotchStripRootView: NSView {
-    private let iconContainer: NSView
+/// The single root view for the notch panel.
+/// Hosts the icon cluster (always at trailing-top) and the expanded content view.
+/// The CAShapeLayer mask gives the panel its notch shape — regenerated every layout() call
+/// so it tracks the spring-animated frame at display refresh rate.
+@MainActor
+final class NotchPanelRootView: NSView {
+    let iconCluster: NotchStripIconClusterView
+    private let iconBox: NSView
+    private let contentHostingView: NSHostingView<ExpandedOverlayView>
     private let shapeMask = CAShapeLayer()
 
-    init(iconContainer: NSView) {
-        self.iconContainer = iconContainer
+    /// Set by the controller from NotchStripLayout so expandRatio can be computed.
+    var collapsedHeight: CGFloat = NotchStripLayoutConstants.minimumMenuBarThickness
+    /// Matches OverlayLayout.expandedSurface.height.
+    let expandedHeight: CGFloat = OverlayLayout.expandedSurface.height
+
+    init(store: NotchAppState, onTap: @escaping () -> Void) {
+        iconCluster = NotchStripIconClusterView(onTap: onTap)
+        let iconSize = NotchStripLayoutConstants.iconHitSize
+        iconBox = NSView(frame: CGRect(origin: .zero, size: CGSize(width: iconSize, height: iconSize)))
+        iconBox.addSubview(iconCluster)
+        iconCluster.frame = iconBox.bounds
+        iconCluster.autoresizingMask = [.width, .height]
+
+        contentHostingView = NSHostingView(rootView: ExpandedOverlayView(store: store))
+        contentHostingView.alphaValue = 0
+
         super.init(frame: .zero)
-        addSubview(iconContainer)
         wantsLayer = true
         layer?.backgroundColor = NSColor.black.cgColor
         layer?.mask = shapeMask
+
+        // Content below icon cluster in z-order; icon on top.
+        addSubview(contentHostingView)
+        addSubview(iconBox)
     }
 
     @available(*, unavailable)
@@ -113,108 +136,87 @@ final class NotchStripRootView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    func refreshContent(store: NotchAppState) {
+        contentHostingView.rootView = ExpandedOverlayView(store: store)
+    }
+
+    /// Called every display-link tick by the controller.
+    func updateExpandRatio(_ ratio: CGFloat) {
+        // Icon cluster: full opacity when collapsed, fades out as content appears.
+        iconBox.alphaValue = max(0, 1.0 - ratio * 3.0)
+
+        // Content: fades in only in the last 40% of expansion.
+        contentHostingView.alphaValue = max(0, (ratio - 0.6) / 0.4)
+    }
+
+    /// Snap content to hidden immediately (called before collapse spring starts).
+    func snapToCollapsed() {
+        contentHostingView.alphaValue = 0
+        iconBox.alphaValue = 1
+    }
+
     override func layout() {
         super.layout()
         shapeMask.frame = bounds
         shapeMask.path = notchPath(in: bounds)
-    }
 
-    /// Builds a Mac-style notch path: flat top (flush with bezel), straight sides,
-    /// and concave anti-corners at the bottom-left/right where the notch meets the menu bar.
-    /// AppKit coords: origin = bottom-left, so y=h is the screen top (flat/hidden),
-    /// y=0 is the visible bottom edge.
-    private func notchPath(in rect: CGRect) -> CGPath {
-        let w = rect.width
-        let h = rect.height
-        let r: CGFloat = 10   // concave corner radius at visible bottom corners
+        // Content fills full panel bounds — clipped by the mask.
+        contentHostingView.frame = bounds
 
-        let path = CGMutablePath()
-        // Top-left (screen edge, flat — no curve needed)
-        path.move(to: CGPoint(x: 0, y: h))
-        // Top-right
-        path.addLine(to: CGPoint(x: w, y: h))
-        // Right side down to bottom-right concave corner start
-        path.addLine(to: CGPoint(x: w, y: r))
-        // Concave bottom-right: quad-bezier curves inward
-        // Control point at the actual corner (w, 0) makes the curve bow toward it = concave
-        path.addQuadCurve(to: CGPoint(x: w - r, y: 0),
-                          control: CGPoint(x: w, y: 0))
-        // Bottom edge
-        path.addLine(to: CGPoint(x: r, y: 0))
-        // Concave bottom-left: quad-bezier curves inward
-        path.addQuadCurve(to: CGPoint(x: 0, y: r),
-                          control: CGPoint(x: 0, y: 0))
-        // Left side back up to top
-        path.addLine(to: CGPoint(x: 0, y: h))
-        path.closeSubpath()
-        return path
+        // Icon box: trailing-top corner.
+        let pad = NotchStripLayoutConstants.iconTrailingPadding
+        let iconSize = NotchStripLayoutConstants.iconHitSize
+        let iconW = min(iconSize, bounds.width)
+        let iconH = min(iconSize, bounds.height)
+        // AppKit: y=0 is bottom, y=maxY is top.
+        iconBox.frame = CGRect(
+            x: bounds.maxX - pad - iconW,
+            y: bounds.maxY - iconH,
+            width: iconW,
+            height: iconH
+        )
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
         guard let superview else { return nil }
-        let pointInSelf = convert(point, from: superview)
-        guard iconContainer.frame.contains(pointInSelf) else { return nil }
-        // `hitTest` expects a point in the *receiver's superview* coords — same as our space (root), not icon-local.
-        return iconContainer.hitTest(pointInSelf)
-    }
-}
+        let local = convert(point, from: superview)
 
-@MainActor
-enum NotchStripWindowFactory {
-    static func makePanel(onTap: @escaping () -> Void) -> (
-        panel: NSPanel,
-        iconContainer: NSView,
-        iconCluster: NotchStripIconClusterView
-    ) {
-        let iconCluster = NotchStripIconClusterView(onTap: onTap)
-        let size = NotchStripLayoutConstants.iconHitSize
-        iconCluster.setFrameSize(NSSize(width: size, height: size))
+        let expandRatio: CGFloat
+        if collapsedHeight >= expandedHeight {
+            expandRatio = 0
+        } else {
+            expandRatio = max(0, min(1, (bounds.height - collapsedHeight) / (expandedHeight - collapsedHeight)))
+        }
 
-        let iconBox = NSView(frame: iconCluster.bounds)
-        iconBox.addSubview(iconCluster)
-        iconCluster.frame = iconBox.bounds
-        iconCluster.autoresizingMask = [.width, .height]
+        if expandRatio < 0.1 {
+            // Collapsed: only icon box responds.
+            guard iconBox.frame.contains(local) else { return nil }
+            return iconCluster.hitTest(local)
+        }
 
-        let root = NotchStripRootView(iconContainer: iconBox)
-
-        let panel = NSPanel(
-            contentRect: .zero,
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-        panel.isReleasedWhenClosed = false
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
-        panel.hasShadow = false
-        panel.hidesOnDeactivate = false
-        panel.ignoresMouseEvents = false
-
-        panel.contentView = root
-        root.frame = panel.contentLayoutRect
-        root.autoresizingMask = [.width, .height]
-
-        iconBox.autoresizingMask = []
-        return (panel, iconBox, iconCluster)
+        // Expanded: full visible mask area responds.
+        guard bounds.contains(local) else { return nil }
+        return super.hitTest(point)
     }
 
-    static func syncIconCluster(
-        iconContainer: NSView,
-        iconCluster: NotchStripIconClusterView,
-        iconFrameScreen: CGRect,
-        panelFrameScreen: CGRect
-    ) {
-        let iconInWindow = iconFrameInWindow(iconFrameScreen: iconFrameScreen, panelFrameScreen: panelFrameScreen)
-        iconContainer.frame = iconInWindow
-        iconCluster.frame = iconContainer.bounds
-    }
+    // MARK: - Notch shape
 
-    private static func iconFrameInWindow(iconFrameScreen: CGRect, panelFrameScreen: CGRect) -> CGRect {
-        CGRect(
-            x: iconFrameScreen.minX - panelFrameScreen.minX,
-            y: iconFrameScreen.minY - panelFrameScreen.minY,
-            width: iconFrameScreen.width,
-            height: iconFrameScreen.height
-        )
+    /// Mac-style notch path: flat top, straight sides, concave bottom corners.
+    /// AppKit coords — origin is bottom-left, so y=bounds.height is the screen top (flat/hidden).
+    private func notchPath(in rect: CGRect) -> CGPath {
+        let w = rect.width
+        let h = rect.height
+        let r: CGFloat = 10
+
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: 0, y: h))
+        path.addLine(to: CGPoint(x: w, y: h))
+        path.addLine(to: CGPoint(x: w, y: r))
+        path.addQuadCurve(to: CGPoint(x: w - r, y: 0), control: CGPoint(x: w, y: 0))
+        path.addLine(to: CGPoint(x: r, y: 0))
+        path.addQuadCurve(to: CGPoint(x: 0, y: r), control: CGPoint(x: 0, y: 0))
+        path.addLine(to: CGPoint(x: 0, y: h))
+        path.closeSubpath()
+        return path
     }
 }
