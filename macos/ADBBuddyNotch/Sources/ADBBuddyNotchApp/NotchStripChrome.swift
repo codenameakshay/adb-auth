@@ -96,7 +96,7 @@ final class NotchStripIconClusterView: NSView {
 
         let symbolConfig = NSImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
         let symbol = NSImage(
-            systemSymbolName: "iphone.gen3.radiowaves.left.and.right",
+            systemSymbolName: "qrcode.viewfinder",
             accessibilityDescription: "ADB Buddy"
         )?.withSymbolConfiguration(symbolConfig)
         imageView.image = symbol
@@ -142,9 +142,9 @@ final class NotchStripIconClusterView: NSView {
 
     override func layout() {
         super.layout()
-        let iconSide: CGFloat = 21
-        let dotSize: CGFloat = 8
-        let gap: CGFloat = 5
+        let iconSide = NotchStripLayoutConstants.iconSymbolWidth
+        let dotSize = NotchStripLayoutConstants.indicatorDotSize
+        let gap = NotchStripLayoutConstants.indicatorGap
         let totalWidth = iconSide + gap + dotSize
         let originX = (bounds.width - totalWidth) / 2
         let midY = (bounds.height - iconSide) / 2

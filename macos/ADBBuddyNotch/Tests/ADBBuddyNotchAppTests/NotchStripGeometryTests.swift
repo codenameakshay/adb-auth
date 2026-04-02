@@ -40,7 +40,7 @@ final class NotchStripGeometryTests: XCTestCase {
 
         let strip = NotchStripLayout.stripFrame(inputs: inputs)
         let inner = auxRight.minX - auxLeft.maxX
-        let expectedWidth = inner + 2 * NotchStripLayoutConstants.horizontalEarExtension
+        let expectedWidth = inner + 2 * NotchStripLayoutConstants.collapsedNotchSideContentWidth
 
         XCTAssertEqual(strip.width, expectedWidth, accuracy: 0.001)
         XCTAssertEqual(strip.midX, (auxLeft.maxX + auxRight.minX) / 2, accuracy: 0.001)

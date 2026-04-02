@@ -2,12 +2,15 @@ import AppKit
 import CoreGraphics
 
 enum NotchStripLayoutConstants {
-    /// Extra black beyond the camera housing on each side (notch mode).
-    static let horizontalEarExtension: CGFloat = 42
     /// When auxiliary rects are missing but the display is notched.
     static let fallbackNotchInnerWidth: CGFloat = 240
     /// Non-notched displays: centered menu-bar pill (Dynamic Island–like proportion).
     static let centeredPillWidth: CGFloat = 148
+    static let iconSymbolWidth: CGFloat = 21
+    static let indicatorDotSize: CGFloat = 6
+    static let indicatorGap: CGFloat = 4
+    /// Collapsed notch width extends symmetrically on both sides by the visible icon cluster width.
+    static let collapsedNotchSideContentWidth: CGFloat = iconSymbolWidth + indicatorDotSize + indicatorGap
     static let iconHitSize: CGFloat = 50
     static let iconTrailingPadding: CGFloat = 8
     static let horizontalScreenMargin: CGFloat = 8
@@ -76,9 +79,11 @@ enum NotchStripLayout {
             let useAux = inputs.auxiliaryTopLeft.width > 0.5
                 && inputs.auxiliaryTopRight.width > 0.5
                 && inner > 1
-            let effectiveInner = useAux ? inner : NotchStripLayoutConstants.fallbackNotchInnerWidth
+            let effectiveInner = NotchStripLayoutConstants.fallbackNotchInnerWidth
+            // let effectiveInner = useAux ? inner : NotchStripLayoutConstants.fallbackNotchInnerWidth
+            print("effectiveInner: \(effectiveInner)")
             width = min(
-                effectiveInner + 2 * NotchStripLayoutConstants.horizontalEarExtension,
+                effectiveInner + 2 * NotchStripLayoutConstants.collapsedNotchSideContentWidth,
                 inputs.screenFrame.width - 2 * margin
             )
             midX = useAux ? (leftMax + rightMin) / 2 : inputs.screenFrame.midX
