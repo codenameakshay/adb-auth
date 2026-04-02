@@ -1,6 +1,86 @@
 import AppKit
 import SwiftUI
 
+enum NotchMaskShape {
+    struct Metrics {
+        let shoulderRadius: CGFloat
+        let bottomCornerRadius: CGFloat
+        let bodyMinX: CGFloat
+        let bodyMaxX: CGFloat
+        let bodyTopY: CGFloat
+    }
+
+    static func path(in rect: CGRect, expansionRatio: CGFloat) -> CGPath {
+        guard rect.width > 0, rect.height > 0 else {
+            return CGMutablePath()
+        }
+
+        let metrics = metrics(in: rect, expansionRatio: expansionRatio)
+        let path = CGMutablePath()
+
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addArc(
+            tangent1End: CGPoint(x: metrics.bodyMaxX, y: rect.maxY),
+            tangent2End: CGPoint(x: metrics.bodyMaxX, y: metrics.bodyTopY),
+            radius: metrics.shoulderRadius
+        )
+        path.addLine(to: CGPoint(x: metrics.bodyMaxX, y: rect.minY + metrics.bottomCornerRadius))
+        path.addArc(
+            tangent1End: CGPoint(x: metrics.bodyMaxX, y: rect.minY),
+            tangent2End: CGPoint(x: metrics.bodyMaxX - metrics.bottomCornerRadius, y: rect.minY),
+            radius: metrics.bottomCornerRadius
+        )
+        path.addLine(to: CGPoint(x: metrics.bodyMinX + metrics.bottomCornerRadius, y: rect.minY))
+        path.addArc(
+            tangent1End: CGPoint(x: metrics.bodyMinX, y: rect.minY),
+            tangent2End: CGPoint(x: metrics.bodyMinX, y: rect.minY + metrics.bottomCornerRadius),
+            radius: metrics.bottomCornerRadius
+        )
+        path.addLine(to: CGPoint(x: metrics.bodyMinX, y: metrics.bodyTopY))
+        path.addArc(
+            tangent1End: CGPoint(x: metrics.bodyMinX, y: rect.maxY),
+            tangent2End: CGPoint(x: rect.minX, y: rect.maxY),
+            radius: metrics.shoulderRadius
+        )
+        path.closeSubpath()
+
+        return path
+    }
+
+    static func metrics(in rect: CGRect, expansionRatio: CGFloat) -> Metrics {
+        let ratio = max(0, min(1, expansionRatio))
+        let desiredRadius = lerp(from: 8, to: 32, ratio: ratio)
+        let maxShoulderRadius = max(0, min(rect.height * 0.45, rect.width / 2 - 1))
+        let shoulderRadius = min(desiredRadius, maxShoulderRadius)
+
+        let bodyMinX = rect.minX + shoulderRadius
+        let bodyMaxX = rect.maxX - shoulderRadius
+        let bodyTopY = rect.maxY - shoulderRadius
+
+        let bottomCornerRadius = max(
+            0,
+            min(
+                desiredRadius,
+                rect.height,
+                max(0, (bodyMaxX - bodyMinX) / 2)
+            )
+        )
+
+        return Metrics(
+            shoulderRadius: shoulderRadius,
+            bottomCornerRadius: bottomCornerRadius,
+            bodyMinX: bodyMinX,
+            bodyMaxX: bodyMaxX,
+            bodyTopY: bodyTopY
+        )
+    }
+
+    private static func lerp(from start: CGFloat, to end: CGFloat, ratio: CGFloat) -> CGFloat {
+        start + (end - start) * ratio
+    }
+}
+
 /// AppKit-only strip control (no SwiftUI `NSHostingView`) so init cannot crash before a window exists.
 @MainActor
 final class NotchStripIconClusterView: NSView {
@@ -158,7 +238,7 @@ final class NotchPanelRootView: NSView {
     override func layout() {
         super.layout()
         shapeMask.frame = bounds
-        shapeMask.path = notchPath(in: bounds)
+        shapeMask.path = NotchMaskShape.path(in: bounds, expansionRatio: currentExpandRatio)
 
         // Content fills full panel bounds — clipped by the mask.
         contentHostingView.frame = bounds
@@ -181,14 +261,7 @@ final class NotchPanelRootView: NSView {
         guard let superview else { return nil }
         let local = convert(point, from: superview)
 
-        let expandRatio: CGFloat
-        if collapsedHeight >= expandedHeight {
-            expandRatio = 0
-        } else {
-            expandRatio = max(0, min(1, (bounds.height - collapsedHeight) / (expandedHeight - collapsedHeight)))
-        }
-
-        if expandRatio < 0.1 {
+        if currentExpandRatio < 0.1 {
             // Collapsed: only icon box responds.
             guard iconBox.frame.contains(local) else { return nil }
             return iconCluster.hitTest(local)
@@ -199,24 +272,8 @@ final class NotchPanelRootView: NSView {
         return super.hitTest(point)
     }
 
-    // MARK: - Notch shape
-
-    /// Mac-style notch path: flat top, straight sides, concave bottom corners.
-    /// AppKit coords — origin is bottom-left, so y=bounds.height is the screen top (flat/hidden).
-    private func notchPath(in rect: CGRect) -> CGPath {
-        let w = rect.width
-        let h = rect.height
-        let r: CGFloat = 10
-
-        let path = CGMutablePath()
-        path.move(to: CGPoint(x: 0, y: h))
-        path.addLine(to: CGPoint(x: w, y: h))
-        path.addLine(to: CGPoint(x: w, y: r))
-        path.addQuadCurve(to: CGPoint(x: w - r, y: 0), control: CGPoint(x: w, y: 0))
-        path.addLine(to: CGPoint(x: r, y: 0))
-        path.addQuadCurve(to: CGPoint(x: 0, y: r), control: CGPoint(x: 0, y: 0))
-        path.addLine(to: CGPoint(x: 0, y: h))
-        path.closeSubpath()
-        return path
+    private var currentExpandRatio: CGFloat {
+        guard expandedHeight > collapsedHeight else { return 0 }
+        return max(0, min(1, (bounds.height - collapsedHeight) / (expandedHeight - collapsedHeight)))
     }
 }
