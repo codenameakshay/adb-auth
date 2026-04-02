@@ -262,7 +262,11 @@ final class NotchPanelController: NSObject {
         guard let screen = panel.screen ?? NSScreen.adbBuddyHostScreen() else { return }
 
         let w = animator.width.position
-        let h = animator.height.position
+        let h = OverlayGeometry.clampedPanelHeight(
+            animator.height.position,
+            isExpanded: store.isExpanded,
+            collapsedHeight: collapsedFrame.height
+        )
         let mx = animator.midX.position
 
         let newFrame = OverlayGeometry.panelFrame(

@@ -81,7 +81,6 @@ enum NotchStripLayout {
                 && inner > 1
             let effectiveInner = NotchStripLayoutConstants.fallbackNotchInnerWidth
             // let effectiveInner = useAux ? inner : NotchStripLayoutConstants.fallbackNotchInnerWidth
-            print("effectiveInner: \(effectiveInner)")
             width = min(
                 effectiveInner + 2 * NotchStripLayoutConstants.collapsedNotchSideContentWidth,
                 inputs.screenFrame.width - 2 * margin

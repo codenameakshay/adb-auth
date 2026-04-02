@@ -5,6 +5,15 @@ enum OverlayLayout {
 }
 
 enum OverlayGeometry {
+    static func clampedPanelHeight(
+        _ height: CGFloat,
+        isExpanded: Bool,
+        collapsedHeight: CGFloat
+    ) -> CGFloat {
+        guard !isExpanded else { return height }
+        return max(height, collapsedHeight)
+    }
+
     /// Frame for the single notch panel in screen coordinates (AppKit: origin = bottom-left).
     /// The panel's top edge is always flush with the screen top (screenMaxY).
     static func panelFrame(
