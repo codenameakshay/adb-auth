@@ -29,8 +29,20 @@ struct NotchStripScreenInputs: Equatable {
 }
 
 enum NotchStripLayout {
-    /// Pill height and origin Y, vertically centered in the menu bar band `[topY - thickness, topY]`.
-    private static func stripHeightAndOriginY(topY: CGFloat, menuBarThickness: CGFloat) -> (height: CGFloat, y: CGFloat) {
+    /// Pill height and origin Y.
+    /// - Notched displays: use the top safe-area height and keep the strip flush with the screen top.
+    /// - Other displays: vertically center the pill in the menu bar band `[topY - thickness, topY]`.
+    private static func stripHeightAndOriginY(
+        topY: CGFloat,
+        menuBarThickness: CGFloat,
+        safeAreaTopInset: CGFloat,
+        hasNotch: Bool
+    ) -> (height: CGFloat, y: CGFloat) {
+        if hasNotch {
+            let h = max(NotchStripLayoutConstants.minimumStripHeight, safeAreaTopInset)
+            return (h, topY - h)
+        }
+
         let t = menuBarThickness
         let inset = NotchStripLayoutConstants.stripVerticalInset
         var h = t - 2 * inset
@@ -45,9 +57,14 @@ enum NotchStripLayout {
     static func stripFrame(inputs: NotchStripScreenInputs) -> CGRect {
         let topY = inputs.screenFrame.maxY
         let thickness = inputs.menuBarThickness
-        let (stripH, y) = stripHeightAndOriginY(topY: topY, menuBarThickness: thickness)
-        let margin = NotchStripLayoutConstants.horizontalScreenMargin
         let hasNotch = inputs.safeAreaTopInset > 0
+        let (stripH, y) = stripHeightAndOriginY(
+            topY: topY,
+            menuBarThickness: thickness,
+            safeAreaTopInset: inputs.safeAreaTopInset,
+            hasNotch: hasNotch
+        )
+        let margin = NotchStripLayoutConstants.horizontalScreenMargin
 
         let width: CGFloat
         let midX: CGFloat

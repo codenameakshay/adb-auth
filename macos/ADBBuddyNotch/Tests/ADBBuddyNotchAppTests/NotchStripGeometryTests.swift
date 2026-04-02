@@ -24,14 +24,15 @@ final class NotchStripGeometryTests: XCTestCase {
         XCTAssertEqual(strip.midY, topY - thickness / 2, accuracy: 0.001)
     }
 
-    func testNotchModeUsesAuxiliaryRectsAndEarExtension() {
+    func testNotchModeUsesAuxiliaryRectsAndSafeAreaHeight() {
         let screen = CGRect(x: 0, y: 0, width: 1512, height: 982)
         let thickness: CGFloat = 37
+        let safeAreaTopInset: CGFloat = 32
         let auxLeft = CGRect(x: 0, y: screen.maxY - thickness, width: 600, height: thickness)
         let auxRight = CGRect(x: 912, y: screen.maxY - thickness, width: 600, height: thickness)
         let inputs = NotchStripScreenInputs(
             screenFrame: screen,
-            safeAreaTopInset: 32,
+            safeAreaTopInset: safeAreaTopInset,
             auxiliaryTopLeft: auxLeft,
             auxiliaryTopRight: auxRight,
             menuBarThickness: thickness
@@ -43,8 +44,8 @@ final class NotchStripGeometryTests: XCTestCase {
 
         XCTAssertEqual(strip.width, expectedWidth, accuracy: 0.001)
         XCTAssertEqual(strip.midX, (auxLeft.maxX + auxRight.minX) / 2, accuracy: 0.001)
-        XCTAssertEqual(strip.midY, screen.maxY - thickness / 2, accuracy: 0.001)
-        XCTAssertEqual(strip.height, thickness, accuracy: 0.001)
+        XCTAssertEqual(strip.height, safeAreaTopInset, accuracy: 0.001)
+        XCTAssertEqual(strip.maxY, screen.maxY, accuracy: 0.001)
     }
 
     func testIconHitFrameIsTrailingInsideStrip() {
