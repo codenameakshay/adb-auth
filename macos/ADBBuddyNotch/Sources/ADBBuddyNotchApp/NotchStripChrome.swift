@@ -97,6 +97,7 @@ final class NotchStripIconClusterView: NSView {
 /// Clickable only inside `iconContainer`; draws a menu-bar-height pill behind it.
 final class NotchStripRootView: NSView {
     private let iconContainer: NSView
+    private let shapeMask = CAShapeLayer()
 
     init(iconContainer: NSView) {
         self.iconContainer = iconContainer
@@ -104,6 +105,7 @@ final class NotchStripRootView: NSView {
         addSubview(iconContainer)
         wantsLayer = true
         layer?.backgroundColor = NSColor.black.cgColor
+        layer?.mask = shapeMask
     }
 
     @available(*, unavailable)
@@ -113,9 +115,39 @@ final class NotchStripRootView: NSView {
 
     override func layout() {
         super.layout()
-        let h = bounds.height
-        let w = bounds.width
-        layer?.cornerRadius = min(w, h) / 2
+        shapeMask.frame = bounds
+        shapeMask.path = notchPath(in: bounds)
+    }
+
+    /// Builds a Mac-style notch path: flat top (flush with bezel), straight sides,
+    /// and concave anti-corners at the bottom-left/right where the notch meets the menu bar.
+    /// AppKit coords: origin = bottom-left, so y=h is the screen top (flat/hidden),
+    /// y=0 is the visible bottom edge.
+    private func notchPath(in rect: CGRect) -> CGPath {
+        let w = rect.width
+        let h = rect.height
+        let r: CGFloat = 10   // concave corner radius at visible bottom corners
+
+        let path = CGMutablePath()
+        // Top-left (screen edge, flat — no curve needed)
+        path.move(to: CGPoint(x: 0, y: h))
+        // Top-right
+        path.addLine(to: CGPoint(x: w, y: h))
+        // Right side down to bottom-right concave corner start
+        path.addLine(to: CGPoint(x: w, y: r))
+        // Concave bottom-right: quad-bezier curves inward
+        // Control point at the actual corner (w, 0) makes the curve bow toward it = concave
+        path.addQuadCurve(to: CGPoint(x: w - r, y: 0),
+                          control: CGPoint(x: w, y: 0))
+        // Bottom edge
+        path.addLine(to: CGPoint(x: r, y: 0))
+        // Concave bottom-left: quad-bezier curves inward
+        path.addQuadCurve(to: CGPoint(x: 0, y: r),
+                          control: CGPoint(x: 0, y: 0))
+        // Left side back up to top
+        path.addLine(to: CGPoint(x: 0, y: h))
+        path.closeSubpath()
+        return path
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
