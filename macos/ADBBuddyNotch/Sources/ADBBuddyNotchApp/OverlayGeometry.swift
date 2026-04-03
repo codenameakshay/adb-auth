@@ -1,10 +1,16 @@
 import CoreGraphics
 
 enum OverlayLayout {
-    static let expandedSurface = CGSize(width: 420, height: 520)
+    static let expandedSurface = CGSize(width: 350, height: 430)
 }
 
 enum OverlayGeometry {
+    static func maskedBodyWidth(for size: CGSize) -> CGFloat {
+        let rect = CGRect(origin: .zero, size: size)
+        let metrics = NotchMaskShape.metrics(in: rect, expansionRatio: 1)
+        return metrics.bodyMaxX - metrics.bodyMinX
+    }
+
     static func clampedPanelHeight(
         _ height: CGFloat,
         isExpanded: Bool,

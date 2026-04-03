@@ -437,3 +437,50 @@ final class NotchAppState: ObservableObject {
         }
     }
 }
+
+#if DEBUG
+extension NotchAppState {
+    static func previewPairing() -> NotchAppState {
+        let s = NotchAppState()
+        s.hasLoadedOnce = true
+        s.resolvedAdbPath = "/usr/local/bin/adb"
+        let payload = PairingPayload(serviceName: "studio-rC3ul887of", password: "1234567890")
+        s.pairingPayload = payload
+        s.qrImage = QRCodeRenderer.image(from: payload.qrString, dimension: 220)
+        s.pairingProgress = PairingProgress(stage: .waitingForScan)
+        s.updatePresentation()
+        return s
+    }
+
+    static func previewPairingInProgress() -> NotchAppState {
+        let s = NotchAppState()
+        s.hasLoadedOnce = true
+        s.resolvedAdbPath = "/usr/local/bin/adb"
+        let payload = PairingPayload(serviceName: "studio-rC3ul887of", password: "1234567890")
+        s.pairingPayload = payload
+        s.qrImage = QRCodeRenderer.image(from: payload.qrString, dimension: 220)
+        s.pairingProgress = PairingProgress(stage: .waitingForPairingService, androidHost: "192.168.1.100")
+        s.updatePresentation()
+        return s
+    }
+
+    static func previewConnected() -> NotchAppState {
+        let s = NotchAppState()
+        s.hasLoadedOnce = true
+        s.resolvedAdbPath = "/usr/local/bin/adb"
+        s.connectedDevices = [
+            Device(serial: "192.168.1.100:5555", status: .device, model: "Pixel_7", product: "panther", isWireless: true, host: "192.168.1.100", port: 5555),
+            Device(serial: "192.168.1.101:5555", status: .device, model: "Pixel_6", product: "oriole", isWireless: true, host: "192.168.1.101", port: 5555),
+        ]
+        s.updatePresentation()
+        return s
+    }
+
+    static func previewAdbMissing() -> NotchAppState {
+        let s = NotchAppState()
+        s.hasLoadedOnce = true
+        s.updatePresentation()
+        return s
+    }
+}
+#endif

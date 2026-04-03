@@ -22,7 +22,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "ADBBuddyNotchApp",
-            dependencies: ["ADBBuddyCore"]
+            dependencies: ["ADBBuddyCore"],
+            resources: [
+                .process("Resources")
+            ]
         ),
         .testTarget(
             name: "ADBBuddyCoreTests",

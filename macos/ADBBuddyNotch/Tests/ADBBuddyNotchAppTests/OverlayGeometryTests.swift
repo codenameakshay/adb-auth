@@ -4,6 +4,12 @@ import XCTest
 
 final class OverlayGeometryTests: XCTestCase {
 
+    func testExpandedSurfaceProvidesEnoughMaskedBodyWidthForPairingRow() {
+        let maskedBodyWidth = OverlayGeometry.maskedBodyWidth(for: OverlayLayout.expandedSurface)
+
+        XCTAssertGreaterThanOrEqual(maskedBodyWidth, PairingLayoutConstants.minimumBodyWidth)
+    }
+
     func testCollapsedHeightIsClampedToHardwareNotchFloor() {
         let clamped = OverlayGeometry.clampedPanelHeight(
             24,

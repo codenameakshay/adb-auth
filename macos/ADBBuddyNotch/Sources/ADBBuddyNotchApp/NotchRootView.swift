@@ -2,6 +2,13 @@ import AppKit
 import ADBBuddyCore
 import SwiftUI
 
+enum PairingLayoutConstants {
+    static let qrSide: CGFloat = 220
+    static let horizontalSpacing: CGFloat = 16
+    static let minimumDetailsWidth: CGFloat = 160
+    static let minimumBodyWidth: CGFloat = qrSide + horizontalSpacing + minimumDetailsWidth
+}
+
 struct ExpandedOverlayView: View {
     @ObservedObject var store: NotchAppState
 
@@ -30,26 +37,7 @@ private struct ExpandedOverlayContentView: View {
     @ObservedObject var store: NotchAppState
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(store.expandedTitle)
-                        .font(.system(size: 18, weight: .semibold))
-                    Text(store.expandedSubtitle)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 12)
-
-                HStack(spacing: 8) {
-                    HeaderIconButton(systemName: "arrow.clockwise", action: store.refreshNow)
-                    HeaderIconButton(systemName: "gearshape", action: { store.isShowingSettings = true })
-                    HeaderIconButton(systemName: "xmark", action: store.dismissExpanded)
-                }
-            }
-
+        VStack(alignment: .center, spacing: 12) {
             if let runtimeError = store.runtimeError, store.viewMode != .adbMissing {
                 InlineBanner(text: runtimeError, tint: .red)
             }
@@ -58,7 +46,7 @@ private struct ExpandedOverlayContentView: View {
             case .loading:
                 VStack(spacing: 10) {
                     ProgressView()
-                    Text("Checking adb and connected devices...")
+                    Text("Checking adb...")
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                 }
@@ -67,27 +55,24 @@ private struct ExpandedOverlayContentView: View {
                 SetupStateView(store: store)
             case .pairing:
                 PairingStateView(store: store)
+                    .frame(maxWidth: .infinity, alignment: .center)
             case .connected:
                 ConnectedStateView(store: store)
             }
+
+            // Icon controls at the bottom
+            HStack(spacing: 8) {
+                HeaderIconButton(systemName: "arrow.clockwise", action: store.refreshNow)
+                HeaderIconButton(systemName: "gearshape", action: { store.isShowingSettings = true })
+                HeaderIconButton(systemName: "xmark", action: store.dismissExpanded)
+            }
         }
         .padding(18)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .top)
         .background(
             RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.black.opacity(0.97),
-                            Color(red: 0.09, green: 0.1, blue: 0.12),
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.08))
+                    Color.black
                 )
         )
     }
@@ -130,57 +115,51 @@ private struct PairingStateView: View {
     @ObservedObject var store: NotchAppState
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 16) {
-                Group {
-                    if let qrImage = store.qrImage {
-                        Image(nsImage: qrImage)
-                            .interpolation(.none)
-                            .resizable()
-                            .scaledToFit()
-                    } else {
-                        ProgressView()
-                            .progressViewStyle(.circular)
-                    }
+        VStack(alignment: .center, spacing: 12) {
+            PairingStagePill(stage: store.pairingProgress.stage)
+
+            // QR code — hero element
+            Group {
+                if let qrImage = store.qrImage {
+                    Image(nsImage: qrImage)
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFit()
+                } else {
+                    ProgressView()
+                        .progressViewStyle(.circular)
                 }
-                .frame(width: 220, height: 220)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.white)
-                )
-
-                VStack(alignment: .leading, spacing: 10) {
-                    PairingStagePill(stage: store.pairingProgress.stage)
-                    Text(store.pairingProgress.detail ?? "Preparing QR pairing...")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    if let androidHost = store.pairingProgress.androidHost {
-                        DetailLine(title: "Android host", value: androidHost)
-                    }
-
-                    if let serviceName = store.pairingPayload?.serviceName {
-                        DetailLine(title: "Service", value: serviceName)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
+            .frame(width: PairingLayoutConstants.qrSide, height: PairingLayoutConstants.qrSide)
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.white)
+            )
+
+            if let serviceName = store.pairingPayload?.serviceName {
+                    Text(serviceName)
+                        .font(.system(size: 7, design: .monospaced))
+                        .foregroundStyle(.secondary)
+            }
+
+            ActionButton(title: "Restart QR", systemName: "qrcode") {
+                    store.restartPairing()
+            }.foregroundStyle(.secondary)
+
+            // HStack(spacing: 10) {
+                
+            //     // ActionButton(title: "Cancel", systemName: "xmark.circle") {
+            //     //     store.cancelPairing()
+            //     // }
+            //     .foregroundStyle(.secondary)
+            // }
 
             if let error = store.pairingProgress.error {
                 InlineBanner(text: error, tint: .red)
             }
-
-            HStack(spacing: 10) {
-                ActionButton(title: "Restart QR", systemName: "qrcode") {
-                    store.restartPairing()
-                }
-                ActionButton(title: "Cancel", systemName: "xmark.circle") {
-                    store.cancelPairing()
-                }
-                .foregroundStyle(.secondary)
-            }
         }
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 }
 
@@ -360,12 +339,13 @@ private struct PairingStagePill: View {
 
     var body: some View {
         Text(title)
-            .font(.system(size: 11, weight: .semibold))
+            .font(.system(size: 8, weight: .semibold))
             .foregroundStyle(tint)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
             .background(tint.opacity(0.14))
             .clipShape(Capsule())
+            .padding(.top, 20)
     }
 }
 
@@ -435,3 +415,29 @@ private struct DetailLine: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Pairing – Waiting for Scan") {
+    ExpandedOverlayView(store: .previewPairing())
+        .frame(width: OverlayLayout.expandedSurface.width, height: OverlayLayout.expandedSurface.height)
+        .background(Color.black)
+}
+
+#Preview("Pairing – In Progress") {
+    ExpandedOverlayView(store: .previewPairingInProgress())
+        .frame(width: OverlayLayout.expandedSurface.width, height: OverlayLayout.expandedSurface.height)
+        .background(Color.black)
+}
+
+#Preview("Connected") {
+    ExpandedOverlayView(store: .previewConnected())
+        .frame(width: OverlayLayout.expandedSurface.width, height: OverlayLayout.expandedSurface.height)
+        .background(Color.black)
+}
+
+#Preview("ADB Missing") {
+    ExpandedOverlayView(store: .previewAdbMissing())
+        .frame(width: OverlayLayout.expandedSurface.width, height: OverlayLayout.expandedSurface.height)
+        .background(Color.black)
+}
+#endif

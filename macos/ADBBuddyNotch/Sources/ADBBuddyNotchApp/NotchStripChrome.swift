@@ -88,20 +88,23 @@ final class NotchStripIconClusterView: NSView {
     private let imageView = NSImageView()
     private let dotView = NSView()
 
+    static func collapsedIconImage() -> NSImage? {
+        guard let url = Bundle.module.url(forResource: "android", withExtension: "png"),
+              let image = NSImage(contentsOf: url) else {
+            return nil
+        }
+        image.isTemplate = false
+        return image
+    }
+
     init(onTap: @escaping () -> Void) {
         self.onTap = onTap
         super.init(frame: .zero)
         wantsLayer = false
         toolTip = "ADB Buddy"
 
-        let symbolConfig = NSImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
-        let symbol = NSImage(
-            systemSymbolName: "qrcode.viewfinder",
-            accessibilityDescription: "ADB Buddy"
-        )?.withSymbolConfiguration(symbolConfig)
-        imageView.image = symbol
+        imageView.image = Self.collapsedIconImage()
         imageView.imageScaling = .scaleProportionallyDown
-        imageView.contentTintColor = .white
 
         dotView.wantsLayer = true
         dotView.layer?.cornerRadius = 4

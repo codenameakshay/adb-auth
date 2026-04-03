@@ -4,6 +4,12 @@ import XCTest
 
 @MainActor
 final class NotchInteractionTests: XCTestCase {
+
+    func testCollapsedIconImageLoadsFromBundledAndroidAsset() {
+        let image = NotchStripIconClusterView.collapsedIconImage()
+
+        XCTAssertNotNil(image)
+    }
     func testCollapsedRootHitTestRoutesToIconCluster() {
         let store = NotchAppState()
         let root = NotchPanelRootView(store: store, onTap: {})
