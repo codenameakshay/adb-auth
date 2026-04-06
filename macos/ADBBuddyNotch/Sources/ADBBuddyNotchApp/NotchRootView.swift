@@ -13,21 +13,9 @@ struct ExpandedOverlayView: View {
     @ObservedObject var store: NotchAppState
 
     var body: some View {
-        ZStack {
-            ScrollView(.vertical, showsIndicators: true) {
-                ExpandedOverlayContentView(store: store)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-            }
-
-            if store.isShowingSettings {
-                Color.black.opacity(0.5)
-                    .contentShape(Rectangle())
-                    .onTapGesture { store.isShowingSettings = false }
-
-                SettingsSheetView(store: store)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .shadow(color: .black.opacity(0.35), radius: 24, y: 8)
-            }
+        ScrollView(.vertical, showsIndicators: true) {
+            ExpandedOverlayContentView(store: store)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(width: store.panelLayout.size.width, height: store.panelLayout.size.height)
     }
@@ -212,20 +200,11 @@ private struct ConnectedStateView: View {
     }
 }
 
-private struct SettingsSheetView: View {
+struct SettingsSheetView: View {
     @ObservedObject var store: NotchAppState
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .center) {
-                Text("ADB Buddy Settings")
-                    .font(.system(size: 18, weight: .semibold))
-                Spacer()
-                HeaderIconButton(systemName: "xmark") {
-                    store.isShowingSettings = false
-                }
-            }
-
+        VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("ADB executable")
                     .font(.system(size: 13, weight: .medium))
@@ -250,24 +229,32 @@ private struct SettingsSheetView: View {
             }
 
             if let settingsMessage = store.settingsMessage {
-                InlineBanner(text: settingsMessage, tint: .blue)
+                Text(settingsMessage)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
             }
 
+            Divider()
+
             HStack(spacing: 10) {
-                ActionButton(title: "Save", systemName: "checkmark") {
+                Button("Save") {
                     Task { await store.saveSettings() }
                 }
-                ActionButton(title: "Restart ADB", systemName: "power") {
+                .keyboardShortcut(.defaultAction)
+
+                Button("Restart ADB") {
                     Task { await store.restartAdbServer() }
                 }
-                ActionButton(title: "Quit", systemName: "xmark.octagon") {
+
+                Spacer()
+
+                Button("Quit ADB Buddy", role: .destructive) {
                     store.quitApp()
                 }
             }
         }
-        .padding(22)
+        .padding(24)
         .frame(width: 480)
-        .background(Color(nsColor: .windowBackgroundColor))
     }
 }
 

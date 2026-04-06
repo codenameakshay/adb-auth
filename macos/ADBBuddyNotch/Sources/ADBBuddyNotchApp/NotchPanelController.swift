@@ -11,6 +11,7 @@ final class NotchPanelController: NSObject {
     private let store: NotchAppState
     private let panel: NSPanel
     private let rootView: NotchPanelRootView
+    private var settingsWindow: NSWindow?
 
     private var animator: SpringAnimator
     private var displayLink: CVDisplayLink?
@@ -118,9 +119,12 @@ final class NotchPanelController: NSObject {
 
         store.$isShowingSettings
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                guard let self else { return }
-                rootView.refreshContent(store: store)
+            .sink { [weak self] isShowing in
+                if isShowing {
+                    self?.openSettingsWindow()
+                } else {
+                    self?.closeSettingsWindow()
+                }
             }
             .store(in: &cancellables)
 
@@ -308,6 +312,8 @@ final class NotchPanelController: NSObject {
         }
         guard store.isExpanded else { return event }
         guard event.type == .leftMouseDown || event.type == .rightMouseDown else { return event }
+        // Clicks inside the settings window shouldn't collapse the notch.
+        if let sw = settingsWindow, sw.isVisible, event.window === sw { return event }
         if !panel.frame.contains(NSEvent.mouseLocation) {
             store.dismissExpanded()
         }
@@ -319,5 +325,48 @@ final class NotchPanelController: NSObject {
         if !panel.frame.contains(NSEvent.mouseLocation) {
             store.dismissExpanded()
         }
+    }
+
+    // MARK: - Settings window
+
+    private func openSettingsWindow() {
+        if let existing = settingsWindow, existing.isVisible {
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let settingsView = SettingsSheetView(store: store)
+        let hostingController = NSHostingController(rootView: settingsView)
+        hostingController.sizingOptions = .preferredContentSize
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 300),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "ADB Buddy Settings"
+        window.contentViewController = hostingController
+        window.isReleasedWhenClosed = false
+        window.center()
+        window.level = .floating
+        window.delegate = self
+        settingsWindow = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func closeSettingsWindow() {
+        settingsWindow?.close()
+        settingsWindow = nil
+    }
+}
+
+extension NotchPanelController: NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        guard notification.object as? NSWindow === settingsWindow else { return }
+        settingsWindow = nil
+        store.isShowingSettings = false
     }
 }
