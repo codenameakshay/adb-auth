@@ -36,29 +36,39 @@ struct ExpandedOverlayView: View {
 private struct ExpandedOverlayContentView: View {
     @ObservedObject var store: NotchAppState
 
+    private static let contentTransition = AnyTransition.asymmetric(
+        insertion: .opacity.combined(with: .scale(scale: 0.97, anchor: .top)),
+        removal:   .opacity.combined(with: .scale(scale: 0.97, anchor: .top))
+    )
+
     var body: some View {
         VStack(alignment: .center, spacing: 12) {
             if let runtimeError = store.runtimeError, store.viewMode != .adbMissing {
                 InlineBanner(text: runtimeError, tint: .red)
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            switch store.viewMode {
-            case .loading:
-                VStack(spacing: 10) {
-                    ProgressView()
-                    Text("Checking adb...")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
+            Group {
+                switch store.viewMode {
+                case .loading:
+                    VStack(spacing: 10) {
+                        ProgressView()
+                        Text("Checking adb...")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .adbMissing:
+                    SetupStateView(store: store)
+                case .pairing:
+                    PairingStateView(store: store)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                case .connected:
+                    ConnectedStateView(store: store)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .adbMissing:
-                SetupStateView(store: store)
-            case .pairing:
-                PairingStateView(store: store)
-                    .frame(maxWidth: .infinity, alignment: .center)
-            case .connected:
-                ConnectedStateView(store: store)
             }
+            .id(store.viewMode)
+            .transition(Self.contentTransition)
 
             // Icon controls at the bottom
             HStack(spacing: 8) {
@@ -67,13 +77,13 @@ private struct ExpandedOverlayContentView: View {
                 HeaderIconButton(systemName: "xmark", action: store.dismissExpanded)
             }
         }
+        .animation(.spring(response: 0.38, dampingFraction: 0.82), value: store.viewMode)
+        .animation(.spring(response: 0.28, dampingFraction: 0.8), value: store.runtimeError != nil)
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .top)
         .background(
             RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(
-                    Color.black
-                )
+                .fill(Color.black)
         )
     }
 }
@@ -167,7 +177,10 @@ private struct ConnectedStateView: View {
     @ObservedObject var store: NotchAppState
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .center, spacing: 12) {
+            // Extra inset so content clears the notch strip (~38px from panel top)
+            Color.clear.frame(height: 22)
+
             if let primary = store.primaryDevice {
                 DeviceSummaryCard(device: primary, isPrimary: true)
 
@@ -176,10 +189,6 @@ private struct ConnectedStateView: View {
                         Text("+\(store.secondaryDevices.count) more connected")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.secondary)
-
-                        ForEach(store.secondaryDevices.prefix(3)) { device in
-                            DeviceSummaryCard(device: device, isPrimary: false)
-                        }
                     }
                 }
 
@@ -199,6 +208,7 @@ private struct ConnectedStateView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .padding(.horizontal, 20)
     }
 }
 
@@ -270,21 +280,23 @@ private struct DeviceSummaryCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(title)
-                    .font(.system(size: 14, weight: isPrimary ? .semibold : .medium))
+                    .font(.system(size: 12, weight: isPrimary ? .semibold : .medium))
                 Spacer()
                 Text(device.status.rawValue.capitalized)
-                    .font(.system(size: 11, weight: .semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
+                    .font(.system(size: 8, weight: .semibold))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
                     .background(Color.green.opacity(0.14))
                     .clipShape(Capsule())
             }
 
             Text(device.serial)
                 .font(.system(size: 12, design: .monospaced))
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
                 .foregroundStyle(.secondary)
 
             if let host = device.host, let port = device.port {
@@ -293,7 +305,8 @@ private struct DeviceSummaryCard: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(14)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -418,26 +431,30 @@ private struct DetailLine: View {
 
 #if DEBUG
 #Preview("Pairing – Waiting for Scan") {
-    ExpandedOverlayView(store: .previewPairing())
-        .frame(width: OverlayLayout.expandedSurface.width, height: OverlayLayout.expandedSurface.height)
+    let store = NotchAppState.previewPairing()
+    ExpandedOverlayView(store: store)
+        .frame(width: store.panelLayout.size.width, height: store.panelLayout.size.height)
         .background(Color.black)
 }
 
 #Preview("Pairing – In Progress") {
-    ExpandedOverlayView(store: .previewPairingInProgress())
-        .frame(width: OverlayLayout.expandedSurface.width, height: OverlayLayout.expandedSurface.height)
+    let store = NotchAppState.previewPairingInProgress()
+    ExpandedOverlayView(store: store)
+        .frame(width: store.panelLayout.size.width, height: store.panelLayout.size.height)
         .background(Color.black)
 }
 
 #Preview("Connected") {
-    ExpandedOverlayView(store: .previewConnected())
-        .frame(width: OverlayLayout.expandedSurface.width, height: OverlayLayout.expandedSurface.height)
+    let store = NotchAppState.previewConnected()
+    ExpandedOverlayView(store: store)
+        .frame(width: store.panelLayout.size.width, height: store.panelLayout.size.height)
         .background(Color.black)
 }
 
 #Preview("ADB Missing") {
-    ExpandedOverlayView(store: .previewAdbMissing())
-        .frame(width: OverlayLayout.expandedSurface.width, height: OverlayLayout.expandedSurface.height)
+    let store = NotchAppState.previewAdbMissing()
+    ExpandedOverlayView(store: store)
+        .frame(width: store.panelLayout.size.width, height: store.panelLayout.size.height)
         .background(Color.black)
 }
 #endif

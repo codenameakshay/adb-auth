@@ -13,13 +13,12 @@ enum NotchViewMode: Equatable {
 struct PanelLayout: Equatable {
     let size: CGSize
 
-    static let expandedOverlay = PanelLayout(size: OverlayLayout.expandedSurface)
-    static let loading = expandedOverlay
-    static let adbMissing = expandedOverlay
-    static let pairing = expandedOverlay
+    static let loading    = PanelLayout(size: CGSize(width: 350, height: 200))
+    static let adbMissing = PanelLayout(size: CGSize(width: 350, height: 340))
+    static let pairing    = PanelLayout(size: CGSize(width: 350, height: 430))
 
-    static func connected(extraRows: Int) -> PanelLayout {
-        expandedOverlay
+    static func connected(hasPrimary: Bool) -> PanelLayout {
+        PanelLayout(size: CGSize(width: 450, height: hasPrimary ? 210 : 110))
     }
 }
 
@@ -433,7 +432,7 @@ final class NotchAppState: ObservableObject {
         case .pairing:
             panelLayout = .pairing
         case .connected:
-            panelLayout = .connected(extraRows: secondaryDevices.count)
+            panelLayout = .connected(hasPrimary: primaryDevice != nil)
         }
     }
 }

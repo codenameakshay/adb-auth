@@ -188,8 +188,8 @@ final class NotchPanelRootView: NSView {
 
     /// Set by the controller from NotchStripLayout so expandRatio can be computed.
     var collapsedHeight: CGFloat = NotchStripLayoutConstants.minimumMenuBarThickness
-    /// Matches OverlayLayout.expandedSurface.height.
-    let expandedHeight: CGFloat = OverlayLayout.expandedSurface.height
+    /// Updated by the controller whenever panelLayout changes.
+    var expandedHeight: CGFloat = OverlayLayout.expandedSurface.height
 
     init(store: NotchAppState, onTap: @escaping () -> Void) {
         iconCluster = NotchStripIconClusterView(onTap: onTap)

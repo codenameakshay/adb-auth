@@ -18,8 +18,9 @@ final class NotchPanelController: NSObject {
 
     /// Computed once when the strip layout is first resolved.
     private var collapsedFrame: CGRect = .zero
-    private let expandedSize = OverlayLayout.expandedSurface
     private let screenMargin: CGFloat = 8
+
+    private var currentExpandedSize: CGSize { store.panelLayout.size }
 
     private var cancellables = Set<AnyCancellable>()
     private var localMonitor: Any?
@@ -103,9 +104,15 @@ final class NotchPanelController: NSObject {
         store.$panelLayout
             .dropFirst()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
+            .sink { [weak self] layout in
                 guard let self else { return }
                 rootView.refreshContent(store: store)
+                rootView.expandedHeight = layout.size.height
+                if store.isExpanded {
+                    animator.width.target = layout.size.width
+                    animator.height.target = layout.size.height
+                    startDisplayLink()
+                }
             }
             .store(in: &cancellables)
 
@@ -161,8 +168,8 @@ final class NotchPanelController: NSObject {
         let targetMidX: CGFloat
 
         if isExpanded {
-            targetWidth = expandedSize.width
-            targetHeight = expandedSize.height
+            targetWidth = currentExpandedSize.width
+            targetHeight = currentExpandedSize.height
             targetMidX = screen.frame.midX
             NSApp.activate(ignoringOtherApps: true)
             panel.makeKeyAndOrderFront(nil)
@@ -201,6 +208,7 @@ final class NotchPanelController: NSObject {
         let stripFrame = NotchStripLayout.stripFrame(inputs: inputs)
         collapsedFrame = stripFrame
         rootView.collapsedHeight = stripFrame.height
+        rootView.expandedHeight = store.panelLayout.size.height
 
         // If currently collapsed and not animating, snap to strip frame immediately.
         if !store.isExpanded && displayLink == nil {
@@ -282,7 +290,7 @@ final class NotchPanelController: NSObject {
 
         let expandRatio: CGFloat
         let cH = collapsedFrame.height
-        let eH = expandedSize.height
+        let eH = currentExpandedSize.height
         if eH > cH {
             expandRatio = max(0, min(1, (h - cH) / (eH - cH)))
         } else {
