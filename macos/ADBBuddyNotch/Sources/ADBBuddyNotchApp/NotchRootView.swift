@@ -39,13 +39,8 @@ private struct ExpandedOverlayContentView: View {
             Group {
                 switch store.viewMode {
                 case .loading:
-                    VStack(spacing: 10) {
-                        ProgressView()
-                        Text("Checking adb...")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    LoadingStatePlaceholder()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .adbMissing:
                     SetupStateView(store: store)
                 case .pairing:
@@ -90,7 +85,7 @@ private struct SetupStateView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Current path")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.white.opacity(0.6))
                 Text(store.adbPathInput.isEmpty ? "Auto-detecting from PATH and common SDK locations" : store.adbPathInput)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.86))
@@ -138,19 +133,19 @@ private struct PairingStateView: View {
             if let serviceName = store.pairingPayload?.serviceName {
                     Text(serviceName)
                         .font(.system(size: 7, design: .monospaced))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.white.opacity(0.6))
             }
 
             ActionButton(title: "Restart QR", systemName: "qrcode") {
                     store.restartPairing()
-            }.foregroundStyle(.secondary)
+            }.foregroundStyle(Color.white.opacity(0.6))
 
             // HStack(spacing: 10) {
                 
             //     // ActionButton(title: "Cancel", systemName: "xmark.circle") {
             //     //     store.cancelPairing()
             //     // }
-            //     .foregroundStyle(.secondary)
+            //     .foregroundStyle(Color.white.opacity(0.6))
             // }
 
             if let error = store.pairingProgress.error {
@@ -176,7 +171,7 @@ private struct ConnectedStateView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("+\(store.secondaryDevices.count) more connected")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.white.opacity(0.6))
                     }
                 }
 
@@ -193,7 +188,7 @@ private struct ConnectedStateView: View {
                 }
             } else {
                 Text("No connected devices.")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.white.opacity(0.6))
             }
         }
         .padding(.horizontal, 20)
@@ -213,7 +208,7 @@ struct SettingsSheetView: View {
                     .font(.system(.body, design: .monospaced))
                 Text("Leave blank to auto-detect from PATH and common macOS SDK locations.")
                     .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.white.opacity(0.6))
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -231,7 +226,7 @@ struct SettingsSheetView: View {
             if let settingsMessage = store.settingsMessage {
                 Text(settingsMessage)
                     .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.white.opacity(0.6))
             }
 
             Divider()
@@ -284,12 +279,12 @@ private struct DeviceSummaryCard: View {
                 .font(.system(size: 12, design: .monospaced))
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.white.opacity(0.6))
 
             if let host = device.host, let port = device.port {
                 Text("\(host):\(port)")
                     .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.white.opacity(0.6))
             }
         }
         .padding(.horizontal, 16)
@@ -298,6 +293,64 @@ private struct DeviceSummaryCard: View {
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(isPrimary ? Color.white.opacity(0.08) : Color.white.opacity(0.05))
+        )
+    }
+}
+
+private struct LoadingStatePlaceholder: View {
+    var body: some View {
+        VStack(alignment: .center, spacing: 12) {
+            Color.clear.frame(height: 22)
+
+            PlaceholderDeviceCard()
+
+            Color.clear.frame(height: 8)
+
+            HStack(spacing: 10) {
+                ActionButton(title: "Refresh", systemName: "arrow.clockwise") {}
+                ActionButton(title: "Disconnect", systemName: "bolt.slash") {}
+            }
+            .opacity(0.4)
+        }
+        .padding(.horizontal, 20)
+        .overlay(alignment: .center) {
+            ZStack {
+                Color.black.opacity(0.5)
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(.white)
+                    .scaleEffect(1.2)
+            }
+        }
+    }
+}
+
+private struct PlaceholderDeviceCard: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("ADB Buddy")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.6))
+                Spacer()
+                Text("Loading")
+                    .font(.system(size: 8, weight: .semibold))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.yellow.opacity(0.14))
+                    .clipShape(Capsule())
+            }
+
+            Text("Starting up...")
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundStyle(Color.white.opacity(0.6))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(0.08))
         )
     }
 }
@@ -357,6 +410,7 @@ private struct HeaderIconButton: View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
                 .frame(width: 30, height: 30)
                 .background(Color.white.opacity(0.08))
                 .clipShape(Circle())
@@ -374,6 +428,7 @@ private struct ActionButton: View {
         Button(action: action) {
             Label(title, systemImage: systemName)
                 .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(Color.white.opacity(0.08))
@@ -407,7 +462,7 @@ private struct DetailLine: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.white.opacity(0.6))
             Text(value)
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.86))

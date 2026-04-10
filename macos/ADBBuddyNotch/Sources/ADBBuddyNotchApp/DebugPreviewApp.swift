@@ -26,7 +26,8 @@ struct DebugPreviewApp: App {
                 .padding(24)
             }
             .frame(minWidth: 400, minHeight: 600)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(Color.black)
+            .preferredColorScheme(.dark)
         }
     }
 }
