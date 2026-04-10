@@ -3,7 +3,7 @@ import CoreGraphics
 
 enum NotchStripLayoutConstants {
     /// When auxiliary rects are missing but the display is notched.
-    static let fallbackNotchInnerWidth: CGFloat = 240
+    static let fallbackNotchInnerWidth: CGFloat = 220
     /// Non-notched displays: centered menu-bar pill (Dynamic Island–like proportion).
     static let centeredPillWidth: CGFloat = 148
     static let iconSymbolWidth: CGFloat = 21

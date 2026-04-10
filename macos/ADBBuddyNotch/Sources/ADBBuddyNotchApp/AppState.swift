@@ -439,6 +439,31 @@ final class NotchAppState: ObservableObject {
 
 #if DEBUG
 extension NotchAppState {
+    static func previewLoading() -> NotchAppState {
+        let s = NotchAppState()
+        // hasLoadedOnce stays false → .loading mode
+        s.updatePresentation()
+        return s
+    }
+
+    static func previewAdbMissing() -> NotchAppState {
+        let s = NotchAppState()
+        s.hasLoadedOnce = true
+        s.updatePresentation()
+        return s
+    }
+
+    // MARK: - Pairing sub-stages
+
+    static func previewPairingIdle() -> NotchAppState {
+        let s = NotchAppState()
+        s.hasLoadedOnce = true
+        s.resolvedAdbPath = "/usr/local/bin/adb"
+        s.pairingProgress = .idle
+        s.updatePresentation()
+        return s
+    }
+
     static func previewPairing() -> NotchAppState {
         let s = NotchAppState()
         s.hasLoadedOnce = true
@@ -463,6 +488,110 @@ extension NotchAppState {
         return s
     }
 
+    static func previewPairingActive() -> NotchAppState {
+        let s = NotchAppState()
+        s.hasLoadedOnce = true
+        s.resolvedAdbPath = "/usr/local/bin/adb"
+        let payload = PairingPayload(serviceName: "studio-rC3ul887of", password: "1234567890")
+        s.pairingPayload = payload
+        s.qrImage = QRCodeRenderer.image(from: payload.qrString, dimension: 220)
+        s.pairingProgress = PairingProgress(
+            stage: .pairing,
+            detail: "Pairing with 192.168.1.100:37513...",
+            androidHost: "192.168.1.100"
+        )
+        s.updatePresentation()
+        return s
+    }
+
+    static func previewPairingWaitingConnect() -> NotchAppState {
+        let s = NotchAppState()
+        s.hasLoadedOnce = true
+        s.resolvedAdbPath = "/usr/local/bin/adb"
+        let payload = PairingPayload(serviceName: "studio-rC3ul887of", password: "1234567890")
+        s.pairingPayload = payload
+        s.qrImage = QRCodeRenderer.image(from: payload.qrString, dimension: 220)
+        s.pairingProgress = PairingProgress(
+            stage: .waitingForConnectService,
+            detail: "Pairing accepted. Waiting for wireless debug endpoint...",
+            androidHost: "192.168.1.100"
+        )
+        s.updatePresentation()
+        return s
+    }
+
+    static func previewPairingConnecting() -> NotchAppState {
+        let s = NotchAppState()
+        s.hasLoadedOnce = true
+        s.resolvedAdbPath = "/usr/local/bin/adb"
+        let payload = PairingPayload(serviceName: "studio-rC3ul887of", password: "1234567890")
+        s.pairingPayload = payload
+        s.qrImage = QRCodeRenderer.image(from: payload.qrString, dimension: 220)
+        s.pairingProgress = PairingProgress(
+            stage: .connecting,
+            detail: "Connecting to 192.168.1.100:5555...",
+            androidHost: "192.168.1.100"
+        )
+        s.updatePresentation()
+        return s
+    }
+
+    static func previewPairingSuccess() -> NotchAppState {
+        let s = NotchAppState()
+        s.hasLoadedOnce = true
+        s.resolvedAdbPath = "/usr/local/bin/adb"
+        let payload = PairingPayload(serviceName: "studio-rC3ul887of", password: "1234567890")
+        s.pairingPayload = payload
+        s.qrImage = QRCodeRenderer.image(from: payload.qrString, dimension: 220)
+        s.pairingProgress = PairingProgress(
+            stage: .success,
+            detail: "Connected to 192.168.1.100:5555",
+            androidHost: "192.168.1.100"
+        )
+        s.updatePresentation()
+        return s
+    }
+
+    static func previewPairingError() -> NotchAppState {
+        let s = NotchAppState()
+        s.hasLoadedOnce = true
+        s.resolvedAdbPath = "/usr/local/bin/adb"
+        let payload = PairingPayload(serviceName: "studio-rC3ul887of", password: "1234567890")
+        s.pairingPayload = payload
+        s.qrImage = QRCodeRenderer.image(from: payload.qrString, dimension: 220)
+        s.pairingProgress = PairingProgress(
+            stage: .error,
+            error: "Timed out waiting for pairing service. Make sure Wireless debugging is active."
+        )
+        s.runtimeError = "Timed out waiting for pairing service. Make sure Wireless debugging is active."
+        s.updatePresentation()
+        return s
+    }
+
+    // MARK: - Connected variations
+
+    static func previewConnectedSingleWireless() -> NotchAppState {
+        let s = NotchAppState()
+        s.hasLoadedOnce = true
+        s.resolvedAdbPath = "/usr/local/bin/adb"
+        s.connectedDevices = [
+            Device(serial: "192.168.1.100:5555", status: .device, model: "Pixel_7", product: "panther", isWireless: true, host: "192.168.1.100", port: 5555),
+        ]
+        s.updatePresentation()
+        return s
+    }
+
+    static func previewConnectedSingleUSB() -> NotchAppState {
+        let s = NotchAppState()
+        s.hasLoadedOnce = true
+        s.resolvedAdbPath = "/usr/local/bin/adb"
+        s.connectedDevices = [
+            Device(serial: "ZY224BVDPJ", status: .device, model: "Pixel_8", product: "shiba", isWireless: false),
+        ]
+        s.updatePresentation()
+        return s
+    }
+
     static func previewConnected() -> NotchAppState {
         let s = NotchAppState()
         s.hasLoadedOnce = true
@@ -471,13 +600,6 @@ extension NotchAppState {
             Device(serial: "192.168.1.100:5555", status: .device, model: "Pixel_7", product: "panther", isWireless: true, host: "192.168.1.100", port: 5555),
             Device(serial: "192.168.1.101:5555", status: .device, model: "Pixel_6", product: "oriole", isWireless: true, host: "192.168.1.101", port: 5555),
         ]
-        s.updatePresentation()
-        return s
-    }
-
-    static func previewAdbMissing() -> NotchAppState {
-        let s = NotchAppState()
-        s.hasLoadedOnce = true
         s.updatePresentation()
         return s
     }

@@ -1,6 +1,8 @@
 import AppKit
 import SwiftUI
 
+// Comment out below to enable DebugPreviewApp
+#if !ENABLE_DEBUG_PREVIEW
 @main
 struct ADBBuddyNotchApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
@@ -11,6 +13,7 @@ struct ADBBuddyNotchApp: App {
         }
     }
 }
+#endif
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {

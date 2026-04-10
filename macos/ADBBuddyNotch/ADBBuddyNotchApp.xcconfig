@@ -1,0 +1,3 @@
+// Xcode build settings for the ADBBuddyNotchApp executable target.
+// Required to enable SwiftUI Previews in SPM executable targets.
+ENABLE_DEBUG_DYLIB = YES
