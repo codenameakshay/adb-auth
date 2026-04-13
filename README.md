@@ -24,6 +24,14 @@ The app has several visual states:
 | **Pairing** | Ready to pair or in the process of pairing (8 sub-states) |
 | **Connected** | Device(s) connected, shows device info |
 
+### Preview
+
+All app states can be previewed using `make preview`:
+
+![App States - Part 1](./docs/screenshots/Screenshot%202026-04-13%20at%2012.48.09%20PM.png)
+
+![App States - Part 2](./docs/screenshots/Screenshot%202026-04-13%20at%2012.48.26%20PM.png)
+
 ### Pairing Sub-States
 
 When pairing, you'll see these stages:
