@@ -109,7 +109,6 @@ Available for **Windows** and **Linux**.
 - **Node.js** 20+ and **npm** 10+
 - **Android platform-tools** (`adb`) on `PATH` or set in **Settings**
 - **Android 11+** for wireless pairing (as required by the OS)
-- **OpenSSL** on `PATH** (used by the pairing flow on some setups)
 
 ## Quick Start (Electron)
 

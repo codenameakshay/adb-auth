@@ -32,7 +32,7 @@ swift test
 | Command | Purpose |
 |---------|---------|
 | `make preview` | Run debug preview showing all UI states |
-| `make build` | Build the release version |
+| `make build` | Build a debug build |
 | `make test` | Run Swift tests |
 | `make clean` | Clean build artifacts |
 
@@ -91,6 +91,7 @@ Short, **imperative** subject line, optional scope:
 |------|----------|
 | macOS App | `macos/ADBBuddyNotch/Sources/` |
 | ADBBuddyCore (shared) | `macos/ADBBuddyNotch/Sources/ADBBuddyCore/` |
+| Xcode project (SwiftUI previews only, not used to build) | `macos/ADBBuddyNotch/ADBBuddyNotch.xcodeproj` |
 | Renderer (React) | `src/` |
 | Electron main | `electron/main.ts` |
 | Preload / IPC bridge | `electron/preload.ts`, `electron/ipc/` |

@@ -16,15 +16,16 @@
 ### Via GitHub Actions
 
 1. Ensure changes are merged to `main`.
-2. Create and push a semantic tag:
+2. Create and push a `macos-v*` tag (a plain `v*` tag triggers the
+   Windows/Linux `Release` workflow instead):
    ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
+   git tag macos-v1.0.0
+   git push origin macos-v1.0.0
    ```
 3. The `Release (macOS)` workflow (`.github/workflows/release-macos.yml`) will:
    - Build the macOS app
    - Create a `.app` bundle
-   - Package as `.zip` or `.dmg`
+   - Package as `.zip`
    - Create GitHub Release with artifacts
 
 ### Manual Trigger (Optional)
