@@ -50,20 +50,27 @@ final class ADBBuddyCoreTests: XCTestCase {
         let wifi = Device(serial: "192.168.1.44:39029", status: .device, model: "Pixel_7", isWireless: true, host: "192.168.1.44", port: 39029)
 
         XCTAssertEqual(
-            PrimaryDeviceSelector.select(from: [usb, wifi], preferredSerial: "usb-1")?.serial,
+            [usb, wifi].primaryDevice(preferredSerial: "usb-1")?.serial,
             "usb-1"
         )
         XCTAssertEqual(
-            PrimaryDeviceSelector.select(from: [usb, wifi], preferredSerial: nil)?.serial,
+            [usb, wifi].primaryDevice(preferredSerial: nil)?.serial,
             "192.168.1.44:39029"
         )
     }
 
-    func testPairingPayloadFactoryCreatesADBWifiPayload() {
-        let payload = PairingPayloadFactory.make()
+    func testPairingPayloadRandomCreatesADBWifiPayload() {
+        let payload = PairingPayload.random()
+
+        XCTAssertTrue(payload.password.allSatisfy(\.isASCII))
+        XCTAssertEqual(payload.password.count, 10)
+        XCTAssertTrue(payload.password.allSatisfy(\.isNumber))
 
         XCTAssertTrue(payload.serviceName.hasPrefix("studio-"))
-        XCTAssertEqual(payload.password.count, 10)
+        let suffix = payload.serviceName.dropFirst("studio-".count)
+        XCTAssertEqual(suffix.count, 10)
+        XCTAssertTrue(suffix.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) })
+
         XCTAssertTrue(payload.qrString.hasPrefix("WIFI:T:ADB;S:"))
         XCTAssertTrue(payload.qrString.hasSuffix(";;"))
     }

@@ -69,7 +69,7 @@ final class NotchAppState: ObservableObject {
     }
 
     var primaryDevice: Device? {
-        PrimaryDeviceSelector.select(from: connectedDevices, preferredSerial: lastConnectedSerial)
+        connectedDevices.primaryDevice(preferredSerial: lastConnectedSerial)
     }
 
     var secondaryDevices: [Device] {
@@ -312,7 +312,7 @@ final class NotchAppState: ObservableObject {
             }
         }
 
-        let payload = PairingPayloadFactory.make()
+        let payload = PairingPayload.random()
         pairingPayload = payload
         qrImage = QRCodeRenderer.image(from: payload.qrString, dimension: 220)
         pairingProgress = PairingProgress(

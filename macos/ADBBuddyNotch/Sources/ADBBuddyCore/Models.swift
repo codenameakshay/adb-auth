@@ -1,13 +1,13 @@
 import Foundation
 
-public enum DeviceStatus: String, CaseIterable, Codable, Sendable {
+public enum DeviceStatus: String, Sendable {
     case device
     case offline
     case unauthorized
     case connecting
 }
 
-public struct Device: Identifiable, Hashable, Codable, Sendable {
+public struct Device: Identifiable, Hashable, Sendable {
     public let serial: String
     public let status: DeviceStatus
     public let model: String?
@@ -37,12 +37,12 @@ public struct Device: Identifiable, Hashable, Codable, Sendable {
     public var id: String { serial }
 }
 
-public enum MDNSServiceKind: String, CaseIterable, Codable, Sendable {
+public enum MDNSServiceKind: String, CaseIterable, Sendable {
     case connect = "_adb-tls-connect._tcp"
     case pairing = "_adb-tls-pairing._tcp"
 }
 
-public struct MDNSService: Hashable, Codable, Sendable {
+public struct MDNSService: Hashable, Sendable {
     public let name: String
     public let host: String
     public let port: Int
@@ -56,7 +56,7 @@ public struct MDNSService: Hashable, Codable, Sendable {
     }
 }
 
-public enum PairingStage: String, CaseIterable, Codable, Sendable {
+public enum PairingStage: String, Sendable {
     case idle
     case waitingForScan
     case waitingForPairingService
@@ -67,7 +67,7 @@ public enum PairingStage: String, CaseIterable, Codable, Sendable {
     case error
 }
 
-public struct PairingProgress: Hashable, Codable, Sendable {
+public struct PairingProgress: Hashable, Sendable {
     public let stage: PairingStage
     public let detail: String?
     public let androidHost: String?
@@ -90,9 +90,13 @@ public extension PairingProgress {
     static let idle = PairingProgress(stage: .idle)
 }
 
-public enum PrimaryDeviceSelector {
-    public static func select(from devices: [Device], preferredSerial: String?) -> Device? {
-        let connected = devices.filter { $0.status == .device }
+public extension Array where Element == Device {
+    var connectedDevices: [Device] {
+        filter { $0.status == .device }
+    }
+
+    func primaryDevice(preferredSerial: String?) -> Device? {
+        let connected = connectedDevices
         guard !connected.isEmpty else { return nil }
 
         if let preferredSerial,
@@ -105,11 +109,5 @@ public enum PrimaryDeviceSelector {
         }
 
         return connected.first
-    }
-}
-
-public extension Array where Element == Device {
-    var connectedDevices: [Device] {
-        filter { $0.status == .device }
     }
 }
