@@ -60,3 +60,6 @@ jobs:
         run: |
           cd macos/ADBBuddyNotch
           swift test
+
+      - name: Package and launch app
+        run: macos/ADBBuddyNotch/package-app.sh ci
