@@ -5,8 +5,6 @@ export const IPC = {
   ADB_CONNECT:      'adb:connect',
   ADB_AUTO_CONNECT: 'adb:auto-connect',
   ADB_DISCONNECT:   'adb:disconnect',
-  ADB_GET_PATH:     'adb:get-path',
-  ADB_VERIFY_PATH:  'adb:verify-path',
   ADB_KILL_SERVER:  'adb:kill-server',
   ADB_START_SERVER: 'adb:start-server',
   // WiFi

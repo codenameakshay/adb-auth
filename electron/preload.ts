@@ -15,10 +15,6 @@ const api = {
       ipcRenderer.invoke(IPC.ADB_AUTO_CONNECT, hostHint),
     disconnect: (serial: string): Promise<IpcResult<string>> =>
       ipcRenderer.invoke(IPC.ADB_DISCONNECT, serial),
-    getPath: (): Promise<IpcResult<string | null>> =>
-      ipcRenderer.invoke(IPC.ADB_GET_PATH),
-    verifyPath: (p: string): Promise<IpcResult<boolean>> =>
-      ipcRenderer.invoke(IPC.ADB_VERIFY_PATH, p),
     killServer: (): Promise<IpcResult> =>
       ipcRenderer.invoke(IPC.ADB_KILL_SERVER),
     startServer: (): Promise<IpcResult> =>

@@ -1,8 +1,6 @@
 import { IPC } from '../../shared/ipc-channels.js'
 import type { AdbDevice } from '../../shared/types.js'
 import * as adb from '../services/adb.service.js'
-import { detectAdbPath, verifyAdbPath } from '../utils/adb-path.js'
-import { getStore } from '../services/store.service.js'
 import { handle } from './helpers.js'
 
 function isValidPort(value: unknown): value is number {
@@ -66,32 +64,6 @@ export function registerAdbHandlers(): void {
 
     const output = await adb.disconnectDevice(serial)
     return output.trim()
-  })
-
-  handle<string | null>(IPC.ADB_GET_PATH, async () => {
-    const settings = getStore().get()
-    if (settings.adbPath && (await verifyAdbPath(settings.adbPath))) {
-      adb.setAdbPath(settings.adbPath)
-      return settings.adbPath
-    }
-
-    const detected = await detectAdbPath()
-    if (detected) {
-      adb.setAdbPath(detected)
-      getStore().set({ adbPath: detected })
-      return detected
-    }
-
-    return null
-  })
-
-  handle<boolean>(IPC.ADB_VERIFY_PATH, async (p: string) => {
-    const valid = await verifyAdbPath(p)
-    if (valid) {
-      adb.setAdbPath(p)
-      getStore().set({ adbPath: p })
-    }
-    return valid
   })
 
   handle<void>(IPC.ADB_KILL_SERVER, () => adb.killServer())

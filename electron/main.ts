@@ -4,7 +4,7 @@ import * as url from 'node:url'
 import { IPC } from '../shared/ipc-channels.js'
 import { registerAllHandlers } from './ipc/index.js'
 import { getStore } from './services/store.service.js'
-import { detectAdbPath } from './utils/adb-path.js'
+import { resolveAdbPath } from './utils/adb-path.js'
 import { setAdbPath, killServer, startServer } from './services/adb.service.js'
 import * as wifi from './services/wifi.service.js'
 
@@ -170,16 +170,10 @@ function createTray(): void {
 }
 
 async function initAdb(): Promise<void> {
-  const settings = getStore().get()
-  if (settings.adbPath) {
-    setAdbPath(settings.adbPath)
-    return
-  }
-  const detected = await detectAdbPath()
-  if (detected) {
-    setAdbPath(detected)
-    getStore().set({ adbPath: detected })
-  }
+  const { adbPath: stored } = getStore().get()
+  const resolved = await resolveAdbPath(stored)
+  setAdbPath(resolved)
+  if (resolved !== stored) getStore().set({ adbPath: resolved })
 }
 
 app.whenReady().then(async () => {
