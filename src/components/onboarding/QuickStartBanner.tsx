@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { X, QrCode, RefreshCw, FolderCog } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { dismissQuickStart, isQuickStartDismissed } from '../../lib/onboardingStorage'
+import { readFlag, writeFlag } from '../../lib/storedFlag'
+
+export const QUICK_START_KEY = 'adb-auth.quickStartDismissed'
 
 export function QuickStartBanner() {
-  const [visible, setVisible] = useState(() => !isQuickStartDismissed())
+  const [visible, setVisible] = useState(() => !readFlag(QUICK_START_KEY))
   const navigate = useNavigate()
 
   const close = () => {
-    dismissQuickStart()
+    writeFlag(QUICK_START_KEY, true)
     setVisible(false)
   }
 

@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Header } from '../components/layout/Header'
 import { DeviceCard } from '../components/devices/DeviceCard'
 import { useDevicesContext } from '../context/DevicesProvider'
-import { QuickStartBanner } from '../components/onboarding/QuickStartBanner'
-import { dismissQuickStart } from '../lib/onboardingStorage'
+import { QuickStartBanner, QUICK_START_KEY } from '../components/onboarding/QuickStartBanner'
+import { writeFlag } from '../lib/storedFlag'
 import { useState, useEffect } from 'react'
 import type { MdnsService } from '../../shared/types'
 
@@ -40,7 +40,7 @@ export function DevicesPage() {
   useEffect(() => window.electronAPI.mdns.onDiscovered(setDiscoveredServices), [])
 
   useEffect(() => {
-    if (connectedDevices.length > 0) dismissQuickStart()
+    if (connectedDevices.length > 0) writeFlag(QUICK_START_KEY, true)
   }, [connectedDevices.length])
 
   const adbMissing = error && (error.includes('not configured') || error.includes('ENOENT'))

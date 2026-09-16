@@ -1,8 +1,11 @@
 import { useState, useCallback } from 'react'
 import { NavLink } from 'react-router-dom'
 import { Smartphone, QrCode, Settings, Wifi, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { version } from '../../../package.json'
 import { cn } from '../../lib/utils'
-import { isSidebarCollapsed, setSidebarCollapsed } from '../../lib/sidebarStorage'
+import { readFlag, writeFlag } from '../../lib/storedFlag'
+
+const SIDEBAR_COLLAPSED_KEY = 'adb-auth.sidebarCollapsed'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Devices', icon: Smartphone },
@@ -11,15 +14,13 @@ const NAV_ITEMS = [
 ]
 
 export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(() => isSidebarCollapsed())
+  const [collapsed, setCollapsed] = useState(() => readFlag(SIDEBAR_COLLAPSED_KEY))
 
   const toggle = useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev
-      setSidebarCollapsed(next)
-      return next
-    })
-  }, [])
+    const next = !collapsed
+    writeFlag(SIDEBAR_COLLAPSED_KEY, next)
+    setCollapsed(next)
+  }, [collapsed])
 
   return (
     <aside
@@ -73,7 +74,7 @@ export function Sidebar() {
             className="ui-nav-link justify-center text-app-text-muted hover:text-app-text-secondary"
             title={
               collapsed
-                ? 'Expand sidebar — ADB Auth v1.0.0'
+                ? `Expand sidebar — ADB Auth v${version}`
                 : 'Collapse sidebar to icon-only (saves horizontal space)'
             }
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -84,7 +85,7 @@ export function Sidebar() {
               <ChevronsLeft className="h-4 w-4 shrink-0" aria-hidden />
             )}
           </button>
-          <div className={cn('ui-sidebar-foot', collapsed && 'hidden')}>v1.0.0</div>
+          <div className={cn('ui-sidebar-foot', collapsed && 'hidden')}>v{version}</div>
         </div>
       </div>
     </aside>
