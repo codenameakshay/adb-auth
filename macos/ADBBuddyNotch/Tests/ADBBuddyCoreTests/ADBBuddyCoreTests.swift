@@ -58,6 +58,44 @@ final class ADBBuddyCoreTests: XCTestCase {
         XCTAssertTrue(payload.qrString.hasSuffix(";;"))
     }
 
+    func testProcessRunnerDrainsOutputLargerThanPipeBuffer() async throws {
+        let output = try await ProcessRunner.run(
+            executable: "/bin/sh",
+            arguments: ["-c", "head -c 200000 /dev/zero | tr '\\0' x"],
+            timeout: 5
+        )
+
+        XCTAssertEqual(output.count, 200_000)
+    }
+
+    func testProcessRunnerThrowsTimeoutForLongRunningProcess() async {
+        let start = Date()
+        do {
+            _ = try await ProcessRunner.run(executable: "/bin/sleep", arguments: ["5"], timeout: 0.3)
+            XCTFail("Expected ProcessRunnerError.timeout")
+        } catch ProcessRunnerError.timeout {
+            XCTAssertLessThan(Date().timeIntervalSince(start), 2)
+        } catch {
+            XCTFail("Expected ProcessRunnerError.timeout, got \(error)")
+        }
+    }
+
+    func testProcessRunnerThrowsNonZeroExitWithStderrOutput() async {
+        do {
+            _ = try await ProcessRunner.run(
+                executable: "/bin/sh",
+                arguments: ["-c", "echo boom >&2; exit 3"],
+                timeout: 5
+            )
+            XCTFail("Expected ProcessRunnerError.nonZeroExit")
+        } catch ProcessRunnerError.nonZeroExit(_, let status, let output) {
+            XCTAssertEqual(status, 3)
+            XCTAssertTrue(output.contains("boom"))
+        } catch {
+            XCTFail("Expected ProcessRunnerError.nonZeroExit, got \(error)")
+        }
+    }
+
     func testCandidatePathsIncludesCommonMacPathsAndPathEntries() {
         let candidates = ADBPathResolver.candidatePaths(
             homeDirectory: "/Users/example",
