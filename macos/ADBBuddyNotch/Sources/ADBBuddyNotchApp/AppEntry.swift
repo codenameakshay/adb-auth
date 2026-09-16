@@ -44,7 +44,7 @@ struct PreviewCard: View {
                 .foregroundColor(.white)
 
             ExpandedOverlayView(store: store)
-                .frame(width: store.panelLayout.size.width, height: store.panelLayout.size.height)
+                .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .padding(12)

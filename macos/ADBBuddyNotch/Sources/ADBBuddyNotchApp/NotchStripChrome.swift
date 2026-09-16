@@ -188,8 +188,8 @@ final class NotchPanelRootView: NSView {
 
     /// Set by the controller from NotchStripLayout so expandRatio can be computed.
     var collapsedHeight: CGFloat = NotchStripLayoutConstants.minimumMenuBarThickness
-    /// Updated by the controller whenever panelLayout changes.
-    var expandedHeight: CGFloat = OverlayLayout.expandedSurface.height
+    /// Updated by the controller whenever viewMode changes.
+    var expandedHeight: CGFloat = NotchViewMode.pairing.panelSize.height
 
     init(store: NotchAppState, onTap: @escaping () -> Void) {
         iconCluster = NotchStripIconClusterView(onTap: onTap)
@@ -217,8 +217,8 @@ final class NotchPanelRootView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    /// Called every display-link tick by the controller.
-    func updateExpandRatio(_ ratio: CGFloat) {
+    /// Called from layout() so fades always track the current frame.
+    private func updateExpandRatio(_ ratio: CGFloat) {
         // Icon cluster: full opacity when collapsed, fades out as content appears.
         iconBox.alphaValue = max(0, 1.0 - ratio * 3.0)
 
@@ -236,6 +236,7 @@ final class NotchPanelRootView: NSView {
         super.layout()
         shapeMask.frame = bounds
         shapeMask.path = NotchMaskShape.path(in: bounds, expansionRatio: currentExpandRatio)
+        updateExpandRatio(currentExpandRatio)
 
         // Content fills full panel bounds — clipped by the mask.
         contentHostingView.frame = bounds

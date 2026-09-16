@@ -1,9 +1,5 @@
 import CoreGraphics
 
-enum OverlayLayout {
-    static let expandedSurface = CGSize(width: 350, height: 430)
-}
-
 enum OverlayGeometry {
     /// Frame for the single notch panel in screen coordinates (AppKit: origin = bottom-left).
     /// The panel's top edge is always flush with the screen top (screenMaxY).
@@ -13,7 +9,7 @@ enum OverlayGeometry {
         size: CGSize,
         screenMinX: CGFloat,
         screenMaxX: CGFloat,
-        horizontalMargin: CGFloat = 8
+        horizontalMargin: CGFloat = NotchStripLayoutConstants.horizontalScreenMargin
     ) -> CGRect {
         let x = max(screenMinX + horizontalMargin,
                     min(midX - size.width / 2, screenMaxX - size.width - horizontalMargin))

@@ -10,15 +10,18 @@ enum NotchViewMode: Equatable {
     case connected
 }
 
-struct PanelLayout: Equatable {
-    let size: CGSize
-
-    static let loading    = PanelLayout(size: CGSize(width: 350, height: 200))
-    static let adbMissing = PanelLayout(size: CGSize(width: 350, height: 340))
-    static let pairing    = PanelLayout(size: CGSize(width: 350, height: 430))
-
-    static func connected(hasPrimary: Bool) -> PanelLayout {
-        PanelLayout(size: CGSize(width: 450, height: hasPrimary ? 210 : 110))
+extension NotchViewMode {
+    var panelSize: CGSize {
+        switch self {
+        case .loading:
+            return CGSize(width: 350, height: 200)
+        case .adbMissing:
+            return CGSize(width: 350, height: 340)
+        case .pairing:
+            return CGSize(width: 350, height: 430)
+        case .connected:
+            return CGSize(width: 450, height: 210)
+        }
     }
 }
 
@@ -45,7 +48,6 @@ final class NotchAppState: ObservableObject {
     @Published private(set) var runtimeError: String?
     @Published private(set) var settingsMessage: String?
     @Published private(set) var viewMode: NotchViewMode = .loading
-    @Published private(set) var panelLayout: PanelLayout = .loading
 
     private let settingsStore = AppSettingsStore()
     private let adbClient: ADBClient
@@ -316,17 +318,6 @@ final class NotchAppState: ObservableObject {
             viewMode = .connected
         } else {
             viewMode = .pairing
-        }
-
-        switch viewMode {
-        case .loading:
-            panelLayout = .loading
-        case .adbMissing:
-            panelLayout = .adbMissing
-        case .pairing:
-            panelLayout = .pairing
-        case .connected:
-            panelLayout = .connected(hasPrimary: primaryDevice != nil)
         }
     }
 }

@@ -19,9 +19,8 @@ final class NotchPanelController: NSObject {
 
     /// Computed once when the strip layout is first resolved.
     private var collapsedFrame: CGRect = .zero
-    private let screenMargin: CGFloat = 8
 
-    private var currentExpandedSize: CGSize { store.panelLayout.size }
+    private var currentExpandedSize: CGSize { store.viewMode.panelSize }
 
     private var cancellables = Set<AnyCancellable>()
     private var localMonitor: Any?
@@ -102,15 +101,17 @@ final class NotchPanelController: NSObject {
             }
             .store(in: &cancellables)
 
-        store.$panelLayout
+        store.$viewMode
+            .map(\.panelSize)
+            .removeDuplicates()
             .dropFirst()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] layout in
+            .sink { [weak self] size in
                 guard let self else { return }
-                rootView.expandedHeight = layout.size.height
+                rootView.expandedHeight = size.height
                 if store.isExpanded {
-                    animator.width.target = layout.size.width
-                    animator.height.target = layout.size.height
+                    animator.width.target = size.width
+                    animator.height.target = size.height
                     startDisplayLink()
                 }
             }
@@ -211,7 +212,7 @@ final class NotchPanelController: NSObject {
         let stripFrame = NotchStripLayout.stripFrame(inputs: inputs)
         collapsedFrame = stripFrame
         rootView.collapsedHeight = stripFrame.height
-        rootView.expandedHeight = store.panelLayout.size.height
+        rootView.expandedHeight = store.viewMode.panelSize.height
 
         // If currently collapsed and not animating, snap to strip frame immediately.
         if !store.isExpanded && displayLink == nil {
@@ -281,21 +282,10 @@ final class NotchPanelController: NSObject {
             screenMaxY: screen.frame.maxY,
             size: CGSize(width: w, height: h),
             screenMinX: screen.frame.minX,
-            screenMaxX: screen.frame.maxX,
-            horizontalMargin: screenMargin
+            screenMaxX: screen.frame.maxX
         )
 
         panel.setFrame(newFrame, display: true)
-
-        let expandRatio: CGFloat
-        let cH = collapsedFrame.height
-        let eH = currentExpandedSize.height
-        if eH > cH {
-            expandRatio = max(0, min(1, (h - cH) / (eH - cH)))
-        } else {
-            expandRatio = 0
-        }
-        rootView.updateExpandRatio(expandRatio)
     }
 
     // MARK: - Event handling
