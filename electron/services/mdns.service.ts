@@ -1,11 +1,10 @@
 import { EventEmitter } from 'node:events'
-import { Bonjour, type Browser, type Service } from 'bonjour-service'
+import { Bonjour, type Service } from 'bonjour-service'
 import type { MdnsService } from '../../shared/types.js'
 import { stripTrailingDot } from './adb.service.js'
 
 class MdnsDiscoveryService extends EventEmitter {
   private bonjour: Bonjour | null = null
-  private browsers: Browser[] = []
   private discovered: Map<string, MdnsService> = new Map()
 
   async start(): Promise<void> {
@@ -28,8 +27,6 @@ class MdnsDiscoveryService extends EventEmitter {
       this.discovered.delete(`_adb-tls-connect._tcp:${svc.name}`)
       this.emit('discovered', Array.from(this.discovered.values()))
     })
-
-    this.browsers.push(connectBrowser)
   }
 }
 

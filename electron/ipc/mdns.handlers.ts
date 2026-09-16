@@ -8,6 +8,5 @@ export function registerMdnsHandlers(): void {
     broadcast(IPC.MDNS_DISCOVERED, services)
   })
 
-  // Start discovery
   mdnsDiscovery.start().catch(console.error)
 }
