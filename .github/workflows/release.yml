@@ -25,8 +25,22 @@ jobs:
         os: [ubuntu-latest, windows-latest]
 
     steps:
+      - name: Compute release tag
+        id: meta
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag_name }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.tag }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -36,6 +50,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Set package version
+        shell: bash
+        run: npm version "${{ steps.meta.outputs.version }}" --no-git-tag-version --allow-same-version
 
       - name: Build renderer
         run: npm run build:renderer

@@ -21,8 +21,22 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Compute release tag
+        id: meta
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag_name }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#macos-v}" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.tag }}
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
@@ -30,35 +44,35 @@ jobs:
       - name: Check Swift version
         run: swift --version
 
-      - name: Build
+      - name: Build and package app
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
         run: |
           cd macos/ADBBuddyNotch
           swift build --configuration release
+          BIN=$(swift build --configuration release --show-bin-path)
 
-      - name: Create App Bundle
-        run: |
-          cd macos/ADBBuddyNotch
-          
-          # Create the app bundle structure
           APP_NAME="ADBBuddyNotch.app"
-          BUILD_DIR=".build/release"
           APP_DIR="$APP_NAME/Contents"
-          
-          mkdir -p "$APP_DIR/MacOS"
-          mkdir -p "$APP_DIR/Resources"
-          
-          # Copy the executable
-          cp "$BUILD_DIR/adb-buddynotchapp" "$APP_DIR/MacOS/" 2>/dev/null || \
-          cp "$(swift build --configuration release --show-bin-path 2>/dev/null || echo "$BUILD_DIR")/ADBBuddyNotchApp" "$APP_DIR/MacOS/" 2>/dev/null || \
-          cp "$BUILD_DIR/ADBBuddyNotchApp" "$APP_DIR/MacOS/" 2>/dev/null
-          
-          # Copy Resources if they exist
-          if [ -d "Sources/ADBBuddyNotchApp/Resources" ]; then
-            cp -R "Sources/ADBBuddyNotchApp/Resources/"* "$APP_DIR/Resources/" 2>/dev/null || true
+          mkdir -p "$APP_DIR/MacOS" "$APP_DIR/Resources"
+
+          if [ ! -f "$BIN/ADBBuddyNotchApp" ]; then
+            echo "::error::built binary not found at $BIN/ADBBuddyNotchApp"
+            exit 1
           fi
-          
-          # Create Info.plist
-          cat > "$APP_DIR/Info.plist" << 'EOF'
+          cp "$BIN/ADBBuddyNotchApp" "$APP_DIR/MacOS/"
+
+          # Bundle.module's generated accessor looks for the resource
+          # bundle at Bundle.main.resourceURL, which resolves to
+          # Contents/Resources once the binary runs inside a real .app.
+          BUNDLE_NAME="ADBBuddyNotch_ADBBuddyNotchApp.bundle"
+          if [ ! -d "$BIN/$BUNDLE_NAME" ]; then
+            echo "::error::resource bundle not found at $BIN/$BUNDLE_NAME"
+            exit 1
+          fi
+          cp -R "$BIN/$BUNDLE_NAME" "$APP_DIR/Resources/"
+
+          cat > "$APP_DIR/Info.plist" << PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -72,80 +86,9 @@ jobs:
               <key>CFBundleDisplayName</key>
               <string>ADB Buddy Notch</string>
               <key>CFBundleVersion</key>
-              <string>1.0.0</string>
+              <string>$VERSION</string>
               <key>CFBundleShortVersionString</key>
-              <string>1.0.0</string>
-              <key>CFBundlePackageType</key>
-              <string>APPL</string>
-              <key>CFBundleIconFile</key>
-              <string></string>
-              <key>LSMinimumSystemVersion</key>
-              <string>14.0</string>
-              <key>LSUIElement</key>
-              <true/>
-              <key>NSHighResolutionCapable</key>
-              <true/>
-              <key>NSPrincipalClass</key>
-              <string>NSApplication</string>
-          </dict>
-          </plist>
-          EOF
-          
-          # Create MacOSX.sdk directory structure (minimal)
-          mkdir -p "$APP_DIR/Resources/Resources" 2>/dev/null || true
-
-      - name: Determine Binary Location
-        id: binary
-        run: |
-          cd macos/ADBBuddyNotch
-          BIN_PATH=$(swift build --configuration release --show-bin-path 2>/dev/null)
-          echo "Binary path: $BIN_PATH"
-          echo "binary_path=$BIN_PATH" >> $GITHUB_OUTPUT
-          ls -la "$BIN_PATH/" 2>/dev/null || echo "Checking build directory..."
-          find .build -name "ADBBuddyNotchApp" -type f 2>/dev/null || true
-
-      - name: Package App Bundle
-        run: |
-          cd macos/ADBBuddyNotch
-          
-          APP_NAME="ADBBuddyNotch.app"
-          BINARY_DIR=${BINARY_PATH:-$(swift build --configuration release --show-bin-path)}
-          
-          mkdir -p "$APP_NAME/Contents/MacOS"
-          mkdir -p "$APP_NAME/Contents/Resources"
-          
-          # Find and copy the executable
-          EXEC_PATH=$(find "$BINARY_DIR" -name "ADBBuddyNotchApp" -type f 2>/dev/null | head -1)
-          if [ -z "$EXEC_PATH" ]; then
-            EXEC_PATH=$(find .build -name "ADBBuddyNotchApp" -type f 2>/dev/null | head -1)
-          fi
-          
-          echo "Executable: $EXEC_PATH"
-          cp "$EXEC_PATH" "$APP_NAME/Contents/MacOS/" 2>/dev/null || echo "Copying failed"
-          
-          # Copy resources
-          if [ -d "Sources/ADBBuddyNotchApp/Resources" ]; then
-            cp -R Sources/ADBBuddyNotchApp/Resources/* "$APP_NAME/Contents/Resources/" 2>/dev/null || true
-          fi
-          
-          # Create Info.plist
-          cat > "$APP_NAME/Contents/Info.plist" << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleExecutable</key>
-              <string>ADBBuddyNotchApp</string>
-              <key>CFBundleIdentifier</key>
-              <string>com.adbbuddynotch.app</string>
-              <key>CFBundleName</key>
-              <string>ADB Buddy Notch</string>
-              <key>CFBundleDisplayName</key>
-              <string>ADB Buddy Notch</string>
-              <key>CFBundleVersion</key>
-              <string>1.0.0</string>
-              <key>CFBundleShortVersionString</key>
-              <string>1.0.0</string>
+              <string>$VERSION</string>
               <key>CFBundlePackageType</key>
               <string>APPL</string>
               <key>LSMinimumSystemVersion</key>
@@ -158,17 +101,10 @@ jobs:
               <string>NSApplication</string>
           </dict>
           </plist>
-          EOF
-          
-          ls -la "$APP_NAME/Contents/MacOS/"
+          PLIST
 
-      - name: Create ZIP
-        run: |
-          cd macos/ADBBuddyNotch
-          ZIP_NAME="ADBBuddyNotch-$(git describe --tags --always).zip"
-          zip -r "$ZIP_NAME" "ADBBuddyNotch.app"
-          ls -la "$ZIP_NAME"
-          echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
+          ZIP_NAME="ADBBuddyNotch-$VERSION.zip"
+          zip -r "$ZIP_NAME" "$APP_NAME"
 
       - name: Upload Release Artifact
         uses: actions/upload-artifact@v4
