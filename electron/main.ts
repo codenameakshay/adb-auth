@@ -49,21 +49,29 @@ function createWindow(): void {
   }
 
   mainWindow.once('ready-to-show', () => {
-    mainWindow!.show()
+    mainWindow?.show()
   })
 
   mainWindow.on('close', (event) => {
     const settings = getStore().get()
     if (settings.minimizeToTray) {
       event.preventDefault()
-      mainWindow!.hide()
+      mainWindow?.hide()
     }
+  })
+
+  mainWindow.on('closed', () => {
+    mainWindow = null
   })
 }
 
 function showMainWindow(): void {
-  mainWindow?.show()
-  mainWindow?.focus()
+  if (!mainWindow) {
+    createWindow()
+    return
+  }
+  mainWindow.show()
+  mainWindow.focus()
 }
 
 function navigateInApp(route: string): void {
@@ -79,41 +87,29 @@ function buildTrayMenu(): Menu {
   return Menu.buildFromTemplate([
     {
       label: 'Open ADB Auth',
-      click: () => {
-        showMainWindow()
-      },
+      click: () => showMainWindow(),
     },
     {
       label: 'Hide window',
-      click: () => {
-        mainWindow?.hide()
-      },
+      click: () => mainWindow?.hide(),
     },
     { type: 'separator' },
     {
       label: 'Devices',
-      click: () => {
-        navigateInApp('/')
-      },
+      click: () => navigateInApp('/'),
     },
     {
       label: 'Pair over Wi‑Fi',
-      click: () => {
-        navigateInApp('/pair')
-      },
+      click: () => navigateInApp('/pair'),
     },
     {
       label: 'Settings',
-      click: () => {
-        navigateInApp('/settings')
-      },
+      click: () => navigateInApp('/settings'),
     },
     { type: 'separator' },
     {
       label: 'Refresh device list',
-      click: () => {
-        refreshDevicesInApp()
-      },
+      click: () => refreshDevicesInApp(),
     },
     {
       label: 'Copy this computer’s IP',
@@ -157,9 +153,7 @@ function buildTrayMenu(): Menu {
     { type: 'separator' },
     {
       label: 'Quit',
-      click: () => {
-        app.quit()
-      },
+      click: () => app.quit(),
     },
   ])
 }
@@ -167,14 +161,12 @@ function buildTrayMenu(): Menu {
 function createTray(): void {
   const iconPath = path.join(__dirname, '../../resources/tray-icon.png')
   const icon = nativeImage.createFromPath(iconPath)
-  tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon)
+  tray = new Tray(icon)
 
   tray.setContextMenu(buildTrayMenu())
   tray.setToolTip('ADB Auth')
 
-  tray.on('double-click', () => {
-    showMainWindow()
-  })
+  tray.on('double-click', () => showMainWindow())
 }
 
 async function initAdb(): Promise<void> {
@@ -194,7 +186,7 @@ app.whenReady().then(async () => {
   await initAdb()
   createWindow()
   createTray()
-  registerAllHandlers(mainWindow!)
+  registerAllHandlers()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
