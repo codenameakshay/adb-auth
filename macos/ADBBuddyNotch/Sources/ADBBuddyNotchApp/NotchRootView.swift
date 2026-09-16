@@ -463,101 +463,22 @@ private struct DetailLine: View {
 }
 
 #if DEBUG
+#Preview {
+    ScrollView {
+        VStack(alignment: .leading, spacing: 24) {
+            ForEach(NotchAppState.previewCases, id: \.title) { title, store in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(.white)
 
-// MARK: - Top-level view modes
-
-#Preview("Loading") {
-    let store = NotchAppState.previewLoading()
-    ExpandedOverlayView(store: store)
-        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
-        .background(Color.black)
-}
-
-#Preview("ADB Missing") {
-    let store = NotchAppState.previewAdbMissing()
-    ExpandedOverlayView(store: store)
-        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
-        .background(Color.black)
-}
-
-// MARK: - Pairing sub-stages
-
-#Preview("Pairing – Idle") {
-    let store = NotchAppState.previewPairingIdle()
-    ExpandedOverlayView(store: store)
-        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
-        .background(Color.black)
-}
-
-#Preview("Pairing – Waiting for Scan") {
-    let store = NotchAppState.previewPairing()
-    ExpandedOverlayView(store: store)
-        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
-        .background(Color.black)
-}
-
-#Preview("Pairing – Waiting for Pairing Service") {
-    let store = NotchAppState.previewPairingInProgress()
-    ExpandedOverlayView(store: store)
-        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
-        .background(Color.black)
-}
-
-#Preview("Pairing – Pairing") {
-    let store = NotchAppState.previewPairingActive()
-    ExpandedOverlayView(store: store)
-        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
-        .background(Color.black)
-}
-
-#Preview("Pairing – Waiting for Connect Service") {
-    let store = NotchAppState.previewPairingWaitingConnect()
-    ExpandedOverlayView(store: store)
-        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
-        .background(Color.black)
-}
-
-#Preview("Pairing – Connecting") {
-    let store = NotchAppState.previewPairingConnecting()
-    ExpandedOverlayView(store: store)
-        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
-        .background(Color.black)
-}
-
-#Preview("Pairing – Success") {
-    let store = NotchAppState.previewPairingSuccess()
-    ExpandedOverlayView(store: store)
-        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
-        .background(Color.black)
-}
-
-#Preview("Pairing – Error") {
-    let store = NotchAppState.previewPairingError()
-    ExpandedOverlayView(store: store)
-        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
-        .background(Color.black)
-}
-
-// MARK: - Connected variations
-
-#Preview("Connected – Single Wireless") {
-    let store = NotchAppState.previewConnectedSingleWireless()
-    ExpandedOverlayView(store: store)
-        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
-        .background(Color.black)
-}
-
-#Preview("Connected – Single USB") {
-    let store = NotchAppState.previewConnectedSingleUSB()
-    ExpandedOverlayView(store: store)
-        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
-        .background(Color.black)
-}
-
-#Preview("Connected – Multiple Devices") {
-    let store = NotchAppState.previewConnected()
-    ExpandedOverlayView(store: store)
-        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
-        .background(Color.black)
+                    ExpandedOverlayView(store: store)
+                        .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
+                }
+            }
+        }
+        .padding(24)
+    }
+    .background(Color.black)
 }
 #endif

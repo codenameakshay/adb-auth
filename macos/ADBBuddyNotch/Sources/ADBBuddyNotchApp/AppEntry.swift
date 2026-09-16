@@ -8,20 +8,8 @@ struct ADBBuddyNotchApp: App {
         WindowGroup {
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 380))], spacing: 24) {
-                    Group {
-                        PreviewCard(title: "Loading", store: NotchAppState.previewLoading())
-                        PreviewCard(title: "ADB Missing", store: NotchAppState.previewAdbMissing())
-                        PreviewCard(title: "Pairing – Idle", store: NotchAppState.previewPairingIdle())
-                        PreviewCard(title: "Pairing – Waiting for Scan", store: NotchAppState.previewPairing())
-                        PreviewCard(title: "Pairing – Waiting for Pairing Service", store: NotchAppState.previewPairingInProgress())
-                        PreviewCard(title: "Pairing – Active", store: NotchAppState.previewPairingActive())
-                        PreviewCard(title: "Pairing – Waiting for Connect", store: NotchAppState.previewPairingWaitingConnect())
-                        PreviewCard(title: "Pairing – Connecting", store: NotchAppState.previewPairingConnecting())
-                        PreviewCard(title: "Pairing – Success", store: NotchAppState.previewPairingSuccess())
-                        PreviewCard(title: "Pairing – Error", store: NotchAppState.previewPairingError())
-                        PreviewCard(title: "Connected – Single Wireless", store: NotchAppState.previewConnectedSingleWireless())
-                        PreviewCard(title: "Connected – Single USB", store: NotchAppState.previewConnectedSingleUSB())
-                        PreviewCard(title: "Connected – Multiple", store: NotchAppState.previewConnected())
+                    ForEach(NotchAppState.previewCases, id: \.title) { title, store in
+                        PreviewCard(title: title, store: store)
                     }
                 }
                 .padding(24)
@@ -41,7 +29,7 @@ struct PreviewCard: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.headline)
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
 
             ExpandedOverlayView(store: store)
                 .frame(width: store.viewMode.panelSize.width, height: store.viewMode.panelSize.height)
