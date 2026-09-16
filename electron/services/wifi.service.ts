@@ -7,7 +7,8 @@ const execAsync = promisify(exec)
 const SSID_COMMAND: Partial<Record<NodeJS.Platform, string>> = {
   win32: 'powershell -NoProfile -Command "(netsh wlan show interfaces) | Select-String \'^\\s+SSID\\s+:\' | Select-Object -First 1 | ForEach-Object { $_ -replace \'.*SSID\\s+:\\s+\', \'\' }"',
   linux: 'nmcli -t -f active,ssid dev wifi | awk -F: \'$1=="yes"{print $2; exit}\'',
-  darwin: '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I | awk -F": " \'/ SSID/ {print $2}\'',
+  // airport was removed in macOS 14.4. Wi-Fi is not always en0, so look the device up first.
+  darwin: 'dev=$(networksetup -listallhardwareports | awk \'/^Hardware Port: (Wi-Fi|AirPort)/{getline; print $2; exit}\'); ipconfig getsummary "${dev:-en0}"',
 }
 
 const IP_COMMAND: Partial<Record<NodeJS.Platform, string>> = {
@@ -26,8 +27,17 @@ async function runTrimmed(cmd: string | undefined): Promise<string | null> {
   }
 }
 
+// ponytail: macOS 15+ redacts the SSID for apps without Location Services access, so this
+// returns null there; a CoreWLAN helper with location permission is the upgrade path.
+export function parseMacSsid(summary: string): string | null {
+  const ssid = summary.match(/^\s*SSID : (.*)$/m)?.[1].trim()
+  return ssid && ssid !== '<redacted>' ? ssid : null
+}
+
 export async function getSsid(): Promise<string | null> {
-  return runTrimmed(SSID_COMMAND[process.platform])
+  const output = await runTrimmed(SSID_COMMAND[process.platform])
+  if (process.platform !== 'darwin') return output
+  return output ? parseMacSsid(output) : null
 }
 
 export async function getLocalIp(): Promise<string | null> {
