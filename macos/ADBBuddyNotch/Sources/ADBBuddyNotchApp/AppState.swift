@@ -198,7 +198,7 @@ final class NotchAppState: ObservableObject {
         let trimmedPath = normalizedAdbPathInput
         settingsMessage = nil
 
-        if let trimmedPath, !(await adbClient.validatePath(trimmedPath)) {
+        if let trimmedPath, !(await ADBPathResolver.validateAdbPath(trimmedPath)) {
             settingsMessage = "That path doesn’t look like a working adb."
             return
         }

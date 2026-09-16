@@ -40,7 +40,6 @@ public enum ADBPathResolver {
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) async -> String? {
         for candidate in candidatePaths(homeDirectory: homeDirectory, environment: environment) {
-            guard FileManager.default.isExecutableFile(atPath: candidate) else { continue }
             if await validateAdbPath(candidate) {
                 return candidate
             }

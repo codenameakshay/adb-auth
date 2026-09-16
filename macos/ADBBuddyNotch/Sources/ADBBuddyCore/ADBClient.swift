@@ -20,6 +20,7 @@ public enum ADBClientError: LocalizedError, Sendable {
 
 public actor ADBClient {
     private var adbPathOverride: String?
+    private var cachedResolvedPath: String?
     private let environment: [String: String]
 
     public init(
@@ -31,19 +32,26 @@ public actor ADBClient {
     }
 
     public func setAdbPathOverride(_ overridePath: String?) {
-        adbPathOverride = Self.normalizedOverride(overridePath)
+        let normalized = Self.normalizedOverride(overridePath)
+        guard normalized != adbPathOverride else { return }
+        adbPathOverride = normalized
+        cachedResolvedPath = nil
     }
 
     public func resolvedAdbPath() async -> String? {
-        if let adbPathOverride, await ADBPathResolver.validateAdbPath(adbPathOverride) {
-            return adbPathOverride
+        if let cachedResolvedPath, FileManager.default.isExecutableFile(atPath: cachedResolvedPath) {
+            return cachedResolvedPath
         }
 
-        return await ADBPathResolver.detectAdbPath(environment: environment)
-    }
+        let resolved: String?
+        if let adbPathOverride, await ADBPathResolver.validateAdbPath(adbPathOverride) {
+            resolved = adbPathOverride
+        } else {
+            resolved = await ADBPathResolver.detectAdbPath(environment: environment)
+        }
 
-    public func validatePath(_ path: String) async -> Bool {
-        await ADBPathResolver.validateAdbPath(path)
+        cachedResolvedPath = resolved
+        return resolved
     }
 
     public func getDevices() async throws -> [Device] {
@@ -71,7 +79,7 @@ public actor ADBClient {
         _ = try await run(["start-server"], timeout: 15)
     }
 
-    public func discoverMDNSServices(kind: MDNSServiceKind? = nil) async throws -> [MDNSService] {
+    private func discoverMDNSServices(kind: MDNSServiceKind? = nil) async throws -> [MDNSService] {
         let output = try await run(["mdns", "services"], timeout: 15)
         let services = ADBParsing.parseMDNSServices(output)
         guard let kind else { return services }
@@ -112,21 +120,16 @@ public actor ADBClient {
     }
 
     private func run(_ arguments: [String], timeout: TimeInterval = 10) async throws -> String {
-        let executable = try await adbExecutable()
+        guard let executable = await resolvedAdbPath() else {
+            throw ADBClientError.adbNotConfigured
+        }
+
         return try await ProcessRunner.run(
             executable: executable,
             arguments: arguments,
             timeout: timeout,
             environment: environment
         )
-    }
-
-    private func adbExecutable() async throws -> String {
-        guard let executable = await resolvedAdbPath() else {
-            throw ADBClientError.adbNotConfigured
-        }
-
-        return executable
     }
 
     private static func normalizedOverride(_ overridePath: String?) -> String? {
