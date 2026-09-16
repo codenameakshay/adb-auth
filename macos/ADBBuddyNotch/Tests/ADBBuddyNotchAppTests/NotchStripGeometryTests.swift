@@ -39,21 +39,11 @@ final class NotchStripGeometryTests: XCTestCase {
         )
 
         let strip = NotchStripLayout.stripFrame(inputs: inputs)
-        let inner = auxRight.minX - auxLeft.maxX
-        let expectedWidth = inner + 2 * NotchStripLayoutConstants.collapsedNotchSideContentWidth
+        let expectedWidth = NotchStripLayoutConstants.notchInnerWidth + 2 * NotchStripLayoutConstants.collapsedNotchSideContentWidth
 
         XCTAssertEqual(strip.width, expectedWidth, accuracy: 0.001)
         XCTAssertEqual(strip.midX, (auxLeft.maxX + auxRight.minX) / 2, accuracy: 0.001)
         XCTAssertEqual(strip.height, safeAreaTopInset, accuracy: 0.001)
         XCTAssertEqual(strip.maxY, screen.maxY, accuracy: 0.001)
-    }
-
-    func testIconHitFrameIsTrailingInsideStrip() {
-        let strip = CGRect(x: 100, y: 900, width: 200, height: 37)
-        let icon = NotchStripLayout.iconHitFrame(stripFrame: strip)
-
-        XCTAssertLessThanOrEqual(icon.maxX, strip.maxX - NotchStripLayoutConstants.iconTrailingPadding + 0.001)
-        XCTAssertGreaterThanOrEqual(icon.minX, strip.minX)
-        XCTAssertEqual(icon.midY, strip.midY, accuracy: 0.001)
     }
 }

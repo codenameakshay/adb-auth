@@ -107,7 +107,7 @@ final class NotchStripIconClusterView: NSView {
         imageView.imageScaling = .scaleProportionallyDown
 
         dotView.wantsLayer = true
-        dotView.layer?.cornerRadius = 4
+        dotView.layer?.cornerRadius = NotchStripLayoutConstants.indicatorDotSize / 2
         dotView.layer?.backgroundColor = NSColor.systemYellow.cgColor
 
         addSubview(imageView)
@@ -215,10 +215,6 @@ final class NotchPanelRootView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    func refreshContent(store: NotchAppState) {
-        contentHostingView.rootView = ExpandedOverlayView(store: store)
     }
 
     /// Called every display-link tick by the controller.

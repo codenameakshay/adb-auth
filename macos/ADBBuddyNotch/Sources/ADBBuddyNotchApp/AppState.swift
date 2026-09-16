@@ -28,7 +28,7 @@ final class NotchAppState: ObservableObject {
         didSet {
             updatePresentation()
             if isExpanded {
-                Task { await handleExpansion() }
+                Task { await refreshState(autoStartPairing: true) }
             }
         }
     }
@@ -39,7 +39,6 @@ final class NotchAppState: ObservableObject {
 
     @Published private(set) var resolvedAdbPath: String?
     @Published private(set) var connectedDevices: [Device] = []
-    @Published private(set) var nonConnectedDevices: [Device] = []
     @Published private(set) var pairingPayload: PairingPayload?
     @Published private(set) var pairingProgress: PairingProgress = .idle
     @Published private(set) var qrImage: NSImage?
@@ -77,83 +76,6 @@ final class NotchAppState: ObservableObject {
         return connectedDevices.filter { $0.serial != primaryDevice.serial }
     }
 
-    var collapsedTitle: String {
-        switch viewMode {
-        case .loading:
-            return "ADB Buddy"
-        case .adbMissing:
-            return "ADB Setup"
-        case .pairing:
-            return pairingProgress.stage == .idle ? "Ready to Pair" : "Pairing"
-        case .connected:
-            return primaryDevice?.model?.replacingOccurrences(of: "_", with: " ") ?? "Connected"
-        }
-    }
-
-    var collapsedSubtitle: String {
-        switch viewMode {
-        case .loading:
-            return "Starting up"
-        case .adbMissing:
-            return "ADB not found"
-        case .pairing:
-            return pairingProgress.detail ?? "Click to show QR"
-        case .connected:
-            if secondaryDevices.isEmpty {
-                return primaryDevice?.serial ?? "1 device"
-            }
-            return "\(secondaryDevices.count + 1) devices connected"
-        }
-    }
-
-    var expandedTitle: String {
-        switch viewMode {
-        case .loading:
-            return "Starting ADB Buddy"
-        case .adbMissing:
-            return "Set up ADB"
-        case .pairing:
-            return "Pair over Wi-Fi"
-        case .connected:
-            return "Current Device"
-        }
-    }
-
-    var expandedSubtitle: String {
-        switch viewMode {
-        case .loading:
-            return "Checking your local Android tooling."
-        case .adbMissing:
-            return "Point the app to a working platform-tools/adb executable."
-        case .pairing:
-            return "Scan the QR code from Android Wireless debugging."
-        case .connected:
-            return secondaryDevices.isEmpty
-                ? "The notch shows your active device at a glance."
-                : "Showing your primary device with \(secondaryDevices.count) more connected."
-        }
-    }
-
-    var indicatorColor: Color {
-        switch viewMode {
-        case .loading:
-            return .yellow
-        case .adbMissing:
-            return .red
-        case .pairing:
-            switch pairingProgress.stage {
-            case .error:
-                return .red
-            case .success:
-                return .green
-            default:
-                return .blue
-            }
-        case .connected:
-            return .green
-        }
-    }
-
     func launch() {
         startPollingLoop()
         Task {
@@ -163,10 +85,6 @@ final class NotchAppState: ObservableObject {
 
     func toggleExpanded() {
         isExpanded.toggle()
-    }
-
-    func expand() {
-        isExpanded = true
     }
 
     func dismissExpanded() {
@@ -234,28 +152,20 @@ final class NotchAppState: ObservableObject {
         }
     }
 
-    func quitApp() {
-        NSApp.terminate(nil)
-    }
-
     private var normalizedAdbPathInput: String? {
         let trimmed = adbPathInput.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
     }
 
-    private func handleExpansion() async {
-        await refreshState(autoStartPairing: true)
-    }
-
     private func startPollingLoop() {
         pollTask?.cancel()
         pollTask = Task { [weak self] in
-            while let self, !Task.isCancelled {
-                let delay = await MainActor.run { self.refreshIntervalSeconds }
+            while !Task.isCancelled {
+                guard let delay = self?.refreshIntervalSeconds else { return }
                 try? await Task.sleep(for: .milliseconds(Int64(delay * 1_000)))
                 if Task.isCancelled { break }
-                let autoStartPairing = await MainActor.run { self.isExpanded }
-                await self.refreshState(autoStartPairing: autoStartPairing)
+                guard let self else { return }
+                await self.refreshState(autoStartPairing: self.isExpanded)
             }
         }
     }
@@ -266,7 +176,6 @@ final class NotchAppState: ObservableObject {
 
         guard resolvedAdbPath != nil else {
             connectedDevices = []
-            nonConnectedDevices = []
             cancelPairing()
             updatePresentation()
             return
@@ -275,14 +184,12 @@ final class NotchAppState: ObservableObject {
         do {
             let devices = try await adbClient.getDevices()
             connectedDevices = devices.connectedDevices
-            nonConnectedDevices = devices.filter { $0.status != .device }
             if let primary = primaryDevice {
                 lastConnectedSerial = primary.serial
             }
             runtimeError = nil
         } catch {
             connectedDevices = []
-            nonConnectedDevices = []
             runtimeError = error.localizedDescription
         }
 
@@ -298,15 +205,7 @@ final class NotchAppState: ObservableObject {
         guard connectedDevices.isEmpty else { return }
 
         if !force {
-            if pairingTask != nil { return }
-            switch pairingProgress.stage {
-            case .idle, .success:
-                break
-            case .error:
-                return
-            default:
-                return
-            }
+            guard pairingTask == nil, pairingProgress.stage == .idle || pairingProgress.stage == .success else { return }
         }
 
         let payload = PairingPayload.random()

@@ -20,9 +20,6 @@ final class NotchInteractionTests: XCTestCase {
         let point = CGPoint(x: root.bounds.maxX - 20, y: root.bounds.maxY - 18)
         let hitView = root.hitTest(point)
 
-        XCTAssertNotNil(hitView)
-        if let hitView {
-            XCTAssertEqual(String(describing: type(of: hitView)), "NotchStripIconClusterView")
-        }
+        XCTAssertTrue(hitView === root.iconCluster)
     }
 }

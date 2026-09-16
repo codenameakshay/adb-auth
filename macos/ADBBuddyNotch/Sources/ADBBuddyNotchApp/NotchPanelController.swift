@@ -107,7 +107,6 @@ final class NotchPanelController: NSObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] layout in
                 guard let self else { return }
-                rootView.refreshContent(store: store)
                 rootView.expandedHeight = layout.size.height
                 if store.isExpanded {
                     animator.width.target = layout.size.width
@@ -274,11 +273,7 @@ final class NotchPanelController: NSObject {
         guard let screen = panel.screen ?? NSScreen.adbBuddyHostScreen() else { return }
 
         let w = animator.width.position
-        let h = OverlayGeometry.clampedPanelHeight(
-            animator.height.position,
-            isExpanded: store.isExpanded,
-            collapsedHeight: collapsedFrame.height
-        )
+        let h = store.isExpanded ? animator.height.position : max(animator.height.position, collapsedFrame.height)
         let mx = animator.midX.position
 
         let newFrame = OverlayGeometry.panelFrame(

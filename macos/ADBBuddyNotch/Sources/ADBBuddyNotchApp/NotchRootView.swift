@@ -4,9 +4,6 @@ import SwiftUI
 
 enum PairingLayoutConstants {
     static let qrSide: CGFloat = 220
-    static let horizontalSpacing: CGFloat = 16
-    static let minimumDetailsWidth: CGFloat = 160
-    static let minimumBodyWidth: CGFloat = qrSide + horizontalSpacing + minimumDetailsWidth
 }
 
 struct ExpandedOverlayView: View {
@@ -244,7 +241,7 @@ struct SettingsSheetView: View {
                 Spacer()
 
                 Button("Quit ADB Buddy", role: .destructive) {
-                    store.quitApp()
+                    NSApp.terminate(nil)
                 }
             }
         }

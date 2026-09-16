@@ -1,6 +1,6 @@
 import Foundation
 
-struct AppSettings: Equatable {
+struct AppSettings {
     var adbPathOverride: String?
     var refreshIntervalSeconds: Double
 }
