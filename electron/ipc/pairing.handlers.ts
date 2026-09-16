@@ -9,11 +9,7 @@ export function registerPairingHandlers(): void {
     broadcast(IPC.PAIRING_STATUS, status)
   })
 
-  handle<StartPairingResult>(IPC.PAIRING_START, async () => {
-    // Cancel any existing session
-    pairingServer.stop()
-    return pairingServer.start()
-  })
+  handle<StartPairingResult>(IPC.PAIRING_START, () => pairingServer.start())
 
   handle<void>(IPC.PAIRING_CANCEL, () => {
     pairingServer.stop()

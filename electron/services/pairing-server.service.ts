@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events'
 import * as crypto from 'node:crypto'
+import QRCode from 'qrcode'
 import type { PairingStatus, StartPairingResult } from '../../shared/types.js'
 import {
   waitForMdnsService,
@@ -8,28 +9,6 @@ import {
   isPairOutputSuccessful,
   isConnectOutputSuccessful,
 } from './adb.service.js'
-
-type QRModule = {
-  toDataURL: (
-    text: string,
-    opts?: {
-      errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H'
-      width?: number
-      margin?: number
-      color?: { dark: string; light: string }
-    }
-  ) => Promise<string>
-}
-
-let QRCode: QRModule | null = null
-
-async function getQRCode() {
-  if (!QRCode) {
-    const mod = await import('qrcode')
-    QRCode = (mod.default || mod) as QRModule
-  }
-  return QRCode
-}
 
 function randomDigits(count: number): string {
   let out = ''
@@ -48,10 +27,6 @@ function randomStudioServiceName(): string {
   return `studio-${suffix}`
 }
 
-function normalizeHost(host: string): string {
-  return host.replace(/\.$/, '').trim()
-}
-
 class PairingServerService extends EventEmitter {
   private token = 0
 
@@ -63,8 +38,7 @@ class PairingServerService extends EventEmitter {
     const password = randomDigits(10)
 
     const qrString = `WIFI:T:ADB;S:${serviceName};P:${password};;`
-    const QR = await getQRCode()
-    const qrDataUrl = await QR.toDataURL(qrString, {
+    const qrDataUrl = await QRCode.toDataURL(qrString, {
       errorCorrectionLevel: 'M',
       width: 320,
       margin: 2,
@@ -102,7 +76,7 @@ class PairingServerService extends EventEmitter {
         pollMs: 1500,
       })
 
-      const pairingHost = normalizeHost(pairingService.host)
+      const pairingHost = pairingService.host
 
       this.emitStatus(token, {
         status: 'pairing',
@@ -130,7 +104,7 @@ class PairingServerService extends EventEmitter {
         pollMs: 1500,
       })
 
-      const connectHost = normalizeHost(connectService.host)
+      const connectHost = connectService.host
 
       this.emitStatus(token, {
         status: 'connecting',

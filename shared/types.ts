@@ -13,7 +13,6 @@ export interface MdnsService {
   host: string
   port: number
   type: string
-  addresses?: string[]
 }
 
 export interface AppSettings {

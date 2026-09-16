@@ -23,5 +23,3 @@ export const IPC = {
   APP_NAVIGATE:         'app:navigate',
   APP_REFRESH_DEVICES:  'app:refresh-devices',
 } as const
-
-export type IpcChannel = typeof IPC[keyof typeof IPC]
