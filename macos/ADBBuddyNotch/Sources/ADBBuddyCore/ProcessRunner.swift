@@ -17,11 +17,8 @@ public enum ProcessRunnerError: LocalizedError, Sendable {
 }
 
 public enum ProcessRunner {
-    // ponytail: readDataToEndOfFile() must run while the process is alive, not after waitUntilExit(),
-    // otherwise a child that fills the ~64KB pipe buffer deadlocks against a parent that only reads
-    // once the process has already exited. Reading and the timeout both need to block a thread, so
-    // this bridges a background queue into async/await instead of doing the blocking work on the
-    // cooperative thread pool via Task.detached.
+    // Drain the pipe while the child runs (a full ~64 KB buffer would block it), and do that
+    // blocking read on a dispatch queue rather than the cooperative pool.
     public static func run(
         executable: String,
         arguments: [String],

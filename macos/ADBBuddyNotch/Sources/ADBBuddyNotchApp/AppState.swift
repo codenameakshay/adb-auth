@@ -3,7 +3,7 @@ import ADBBuddyCore
 import Combine
 import SwiftUI
 
-enum NotchViewMode: Equatable {
+enum NotchViewMode {
     case loading
     case adbMissing
     case pairing

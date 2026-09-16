@@ -2,7 +2,7 @@ import AppKit
 import CoreGraphics
 
 enum NotchStripLayoutConstants {
-    /// Fixed inner width of the collapsed notch strip (see commit 3f40d71).
+    /// Fixed inner width of the collapsed notch strip; deliberately not derived from the auxiliary rects.
     static let notchInnerWidth: CGFloat = 220
     /// Non-notched displays: centered menu-bar pill (Dynamic Island–like proportion).
     static let centeredPillWidth: CGFloat = 148
@@ -16,7 +16,7 @@ enum NotchStripLayoutConstants {
     static let horizontalScreenMargin: CGFloat = 8
     /// Never draw shorter than this; matches typical menu bar when API returns 0.
     static let minimumMenuBarThickness: CGFloat = 38
-    /// Minimum pill height after insets.
+    /// Minimum strip height on notched displays.
     static let minimumStripHeight: CGFloat = 26
 }
 
