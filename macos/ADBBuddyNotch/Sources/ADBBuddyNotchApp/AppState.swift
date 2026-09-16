@@ -190,7 +190,6 @@ final class NotchAppState: ObservableObject {
         pairingPayload = nil
         qrImage = nil
         pairingProgress = .idle
-        runtimeError = nil
         updatePresentation()
     }
 
@@ -262,14 +261,12 @@ final class NotchAppState: ObservableObject {
     }
 
     private func refreshState(autoStartPairing: Bool) async {
-        await adbClient.setAdbPathOverride(normalizedAdbPathInput)
         resolvedAdbPath = await adbClient.resolvedAdbPath()
         hasLoadedOnce = true
 
         guard resolvedAdbPath != nil else {
             connectedDevices = []
             nonConnectedDevices = []
-            runtimeError = "ADB not found. Install Android platform-tools or save a manual path."
             cancelPairing()
             updatePresentation()
             return
@@ -319,7 +316,6 @@ final class NotchAppState: ObservableObject {
             stage: .waitingForScan,
             detail: "Scan this QR code from Wireless debugging on your Android device."
         )
-        runtimeError = nil
         updatePresentation()
 
         pairingTask = Task { [weak self] in
@@ -344,7 +340,7 @@ final class NotchAppState: ObservableObject {
                 pollInterval: 1.5
             )
 
-            let pairingHost = pairingService.host.trimmingCharacters(in: CharacterSet(charactersIn: "."))
+            let pairingHost = pairingService.host
             pairingProgress = PairingProgress(
                 stage: .pairing,
                 detail: "Pairing with \(pairingHost):\(pairingService.port)...",
@@ -375,7 +371,7 @@ final class NotchAppState: ObservableObject {
                 pollInterval: 1.5
             )
 
-            let connectHost = connectService.host.trimmingCharacters(in: CharacterSet(charactersIn: "."))
+            let connectHost = connectService.host
             pairingProgress = PairingProgress(
                 stage: .connecting,
                 detail: "Connecting to \(connectHost):\(connectService.port)...",
@@ -408,7 +404,6 @@ final class NotchAppState: ObservableObject {
                 stage: .error,
                 error: error.localizedDescription
             )
-            runtimeError = error.localizedDescription
             updatePresentation()
         }
     }
