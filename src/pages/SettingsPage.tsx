@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { CheckCircle2, XCircle, Server, ServerOff, Loader2 } from 'lucide-react'
 import { Header } from '../components/layout/Header'
 import { useSettings } from '../hooks/useSettings'
+import { useTransient } from '../hooks/useTransient'
 import { cn } from '../lib/utils'
 
 const INTERVALS = [
@@ -17,16 +18,11 @@ export function SettingsPage() {
   const [adbPathInput, setAdbPathInput] = useState('')
   const [adbStatus, setAdbStatus] = useState<'idle' | 'valid' | 'invalid'>('idle')
   const [serverBusy, setServerBusy] = useState<'kill' | 'start' | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, showToast] = useTransient<string>(3000)
 
   useEffect(() => {
     setAdbPathInput(settings.adbPath || '')
   }, [settings.adbPath])
-
-  const showToast = (msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3000)
-  }
 
   const checkAndSave = async () => {
     const trimmed = adbPathInput.trim()

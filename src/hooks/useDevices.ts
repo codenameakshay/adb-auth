@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { AdbDevice } from '../../shared/types'
+import { usePolling } from './usePolling'
 
 function deviceRowEqual(a: AdbDevice, b: AdbDevice): boolean {
   return (
@@ -24,52 +25,34 @@ function devicesDataEqual(prev: AdbDevice[], next: AdbDevice[]): boolean {
   return true
 }
 
-export function useDevices(intervalMs: number = 3000) {
+export function useDevices(intervalMs: number) {
   const [devices, setDevices] = useState<AdbDevice[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const timerRef = useRef<number | null>(null)
-  const visibleRef = useRef(typeof document !== 'undefined' && document.visibilityState === 'visible')
 
   const fetchDevices = useCallback(async (options?: { silent?: boolean }) => {
-    if (!window.electronAPI) return
     const silent = options?.silent ?? false
     if (!silent) setLoading(true)
     try {
       const result = await window.electronAPI.adb.getDevices()
       if (result.success && result.data) {
         setDevices((prev) => (devicesDataEqual(prev, result.data!) ? prev : result.data!))
-        setError((e) => (e === null ? e : null))
+        setError(null)
       } else {
-        const msg = result.error || 'Failed to get devices'
-        setError((e) => (e === msg ? e : msg))
+        setError(result.error || 'Failed to get devices')
       }
     } catch (err) {
-      const msg = String(err)
-      setError((e) => (e === msg ? e : msg))
+      setError(String(err))
     } finally {
       if (!silent) setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    const onVisibility = () => {
-      visibleRef.current = document.visibilityState === 'visible'
-      if (visibleRef.current) void fetchDevices({ silent: true })
-    }
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => document.removeEventListener('visibilitychange', onVisibility)
+    void fetchDevices()
   }, [fetchDevices])
 
-  useEffect(() => {
-    void fetchDevices()
-    timerRef.current = window.setInterval(() => {
-      if (visibleRef.current) void fetchDevices({ silent: true })
-    }, intervalMs)
-    return () => {
-      if (timerRef.current !== null) window.clearInterval(timerRef.current)
-    }
-  }, [fetchDevices, intervalMs])
+  usePolling(() => void fetchDevices({ silent: true }), intervalMs)
 
   const refresh = useCallback(() => fetchDevices({ silent: false }), [fetchDevices])
 
@@ -91,15 +74,20 @@ export function useDevices(intervalMs: number = 3000) {
     [fetchDevices]
   )
 
+  const connectedDevices = useMemo(() => devices.filter((d) => d.status === 'device'), [devices])
+  const otherDevices = useMemo(() => devices.filter((d) => d.status !== 'device'), [devices])
+
   return useMemo(
     () => ({
       devices,
+      connectedDevices,
+      otherDevices,
       loading,
       error,
       refresh,
       connectDevice,
       disconnectDevice,
     }),
-    [devices, loading, error, refresh, connectDevice, disconnectDevice]
+    [devices, connectedDevices, otherDevices, loading, error, refresh, connectDevice, disconnectDevice]
   )
 }

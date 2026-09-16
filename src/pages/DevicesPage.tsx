@@ -32,7 +32,8 @@ function DevicesLoadingHints() {
 }
 
 export function DevicesPage() {
-  const { devices, loading, error, refresh, connectDevice, disconnectDevice } = useDevicesContext()
+  const { devices, connectedDevices, otherDevices, loading, error, refresh, connectDevice, disconnectDevice } =
+    useDevicesContext()
   const [discoveredServices, setDiscoveredServices] = useState<MdnsService[]>([])
   const navigate = useNavigate()
 
@@ -45,9 +46,6 @@ export function DevicesPage() {
       unsub()
     }
   }, [])
-
-  const connectedDevices = devices.filter((d) => d.status === 'device')
-  const otherDevices = devices.filter((d) => d.status !== 'device')
 
   useEffect(() => {
     if (connectedDevices.length > 0) dismissQuickStart()

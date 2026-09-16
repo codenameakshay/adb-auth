@@ -1,16 +1,15 @@
-import { useState } from 'react'
 import { useWifi } from '../../hooks/useWifi'
+import { useTransient } from '../../hooks/useTransient'
 import { cn } from '../../lib/utils'
 
 export function NetworkBadge() {
   const { ssid, ip, copyIp } = useWifi()
-  const [copied, setCopied] = useState(false)
+  const [copied, showCopied] = useTransient<true>(1500)
 
   const handleCopy = () => {
     if (!ip) return
     copyIp()
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    showCopied(true)
   }
 
   const summary = [ssid, ip].filter(Boolean).join(' · ')

@@ -2,24 +2,22 @@ import { Smartphone, Wifi, Copy, PlugZap, Unplug, AlertTriangle } from 'lucide-r
 import { useState, memo } from 'react'
 import { DeviceStatusBadge } from './DeviceStatusBadge'
 import { cn } from '../../lib/utils'
+import { useTransient } from '../../hooks/useTransient'
 import type { AdbDevice } from '../../../shared/types'
 
 interface DeviceCardProps {
   device: AdbDevice
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onConnect: (host: string, port: number) => Promise<any>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onDisconnect: (serial: string) => Promise<any>
+  onConnect: (host: string, port: number) => Promise<unknown>
+  onDisconnect: (serial: string) => Promise<unknown>
 }
 
 export const DeviceCard = memo(function DeviceCard({ device, onConnect, onDisconnect }: DeviceCardProps) {
   const [busy, setBusy] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copied, showCopied] = useTransient<true>(1500)
 
   const copySerial = () => {
     navigator.clipboard.writeText(device.serial).catch(() => {})
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    showCopied(true)
   }
 
   const handleConnect = async () => {
