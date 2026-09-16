@@ -87,6 +87,9 @@
       ],
       "icon": "resources/icon.ico"
     },
+    "linux": {
+      "icon": "resources/icon.png"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
