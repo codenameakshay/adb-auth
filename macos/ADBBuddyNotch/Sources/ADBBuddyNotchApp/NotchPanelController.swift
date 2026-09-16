@@ -9,7 +9,7 @@ final class NotchPanelController: NSObject {
     // MARK: - Stored state
 
     private let store: NotchAppState
-    private let panel: NSPanel
+    let panel: NSPanel
     private let rootView: NotchPanelRootView
     private var settingsWindow: NSWindow?
 
