@@ -12,12 +12,25 @@ const INTERVALS = [
   { label: '10s', value: 10000 },
 ]
 
+const SERVER_ACTIONS = {
+  kill: {
+    run: () => window.electronAPI.adb.killServer(),
+    done: 'ADB server stopped. Start it again if devices stop responding.',
+    failed: 'Could not stop the ADB server. Try again or restart the app.',
+  },
+  start: {
+    run: () => window.electronAPI.adb.startServer(),
+    done: 'ADB server is running again.',
+    failed: 'Could not start the ADB server. Check the path above.',
+  },
+}
+
 export function SettingsPage() {
   const settings = useSettings((s) => s.settings)
   const updateSettings = useSettings((s) => s.updateSettings)
   const [adbPathInput, setAdbPathInput] = useState('')
   const [adbStatus, setAdbStatus] = useState<'idle' | 'valid' | 'invalid'>('idle')
-  const [serverBusy, setServerBusy] = useState<'kill' | 'start' | null>(null)
+  const [serverBusy, setServerBusy] = useState<keyof typeof SERVER_ACTIONS | null>(null)
   const [toast, showToast] = useTransient<string>(3000)
 
   useEffect(() => {
@@ -36,20 +49,12 @@ export function SettingsPage() {
     }
   }
 
-  const runServerAction = async (action: 'kill' | 'start') => {
+  const runServerAction = async (action: keyof typeof SERVER_ACTIONS) => {
+    const { run, done, failed } = SERVER_ACTIONS[action]
     setServerBusy(action)
     try {
-      const result = await (action === 'kill' ? window.electronAPI.adb.killServer() : window.electronAPI.adb.startServer())
-      showToast(
-        result.success
-          ? action === 'kill'
-            ? 'ADB server stopped. Start it again if devices stop responding.'
-            : 'ADB server is running again.'
-          : result.error ||
-              (action === 'kill'
-                ? 'Could not stop the ADB server. Try again or restart the app.'
-                : 'Could not start the ADB server. Check the path above.')
-      )
+      const result = await run()
+      showToast(result.success ? done : result.error || failed)
     } finally {
       setServerBusy(null)
     }

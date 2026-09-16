@@ -16,14 +16,10 @@ interface Toast {
 
 export function PairPage() {
   const [activeTab, setActiveTab] = useState<Tab>('qr')
-  const [toast, showToastValue] = useTransient<Toast>(4000)
+  const [toast, showToast] = useTransient<Toast>(4000)
   const pairing = usePairing()
   const tabQrRef = useRef<HTMLButtonElement>(null)
   const tabManualRef = useRef<HTMLButtonElement>(null)
-
-  const showToast = (type: 'success' | 'error', message: string) => {
-    showToastValue({ type, message })
-  }
 
   const switchTab = (tab: Tab) => {
     if (tab === activeTab) return
@@ -149,7 +145,7 @@ export function PairPage() {
             >
               {activeTab === 'manual' && (
                 <div className="ui-reveal-content">
-                  <ManualPairForm onSuccess={(msg) => showToast('success', msg)} onError={(msg) => showToast('error', msg)} />
+                  <ManualPairForm onSuccess={(message) => showToast({ type: 'success', message })} onError={(message) => showToast({ type: 'error', message })} />
                 </div>
               )}
             </div>
