@@ -81,6 +81,16 @@ enum NotchMaskShape {
     }
 }
 
+private extension Bundle {
+    /// SwiftPM's generated `Bundle.module` searches different places depending on the toolchain
+    /// (Swift 6.3 only checks the .app root) and calls fatalError when it misses. The release
+    /// .app ships the resource bundle in Contents/Resources, so look there first.
+    static var notchResources: Bundle {
+        Bundle.main.url(forResource: "ADBBuddyNotch_ADBBuddyNotchApp", withExtension: "bundle")
+            .flatMap(Bundle.init(url:)) ?? .module
+    }
+}
+
 /// AppKit-only strip control (no SwiftUI `NSHostingView`) so init cannot crash before a window exists.
 @MainActor
 final class NotchStripIconClusterView: NSView {
@@ -89,7 +99,7 @@ final class NotchStripIconClusterView: NSView {
     private let dotView = NSView()
 
     static func collapsedIconImage() -> NSImage? {
-        guard let url = Bundle.module.url(forResource: "android", withExtension: "png"),
+        guard let url = Bundle.notchResources.url(forResource: "android", withExtension: "png"),
               let image = NSImage(contentsOf: url) else {
             return nil
         }

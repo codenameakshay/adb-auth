@@ -29,4 +29,6 @@ dist-electron
 .swiftpm
 DerivedData
 macos/ADBBuddyNotch/.home
+macos/ADBBuddyNotch/ADBBuddyNotch.app
+macos/ADBBuddyNotch/ADBBuddyNotch-*.zip
 xcuserdata/
