@@ -275,17 +275,11 @@ private struct DeviceSummaryCard: View {
                     .clipShape(Capsule())
             }
 
-            Text(device.serial)
+            Text(verbatim: device.serial)
                 .font(.system(size: 12, design: .monospaced))
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
                 .foregroundStyle(Color.white.opacity(0.6))
-
-            if let host = device.host, let port = device.port {
-                Text("\(host):\(port)")
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(Color.white.opacity(0.6))
-            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
