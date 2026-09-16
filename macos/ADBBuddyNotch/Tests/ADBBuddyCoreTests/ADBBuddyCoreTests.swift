@@ -35,6 +35,16 @@ final class ADBBuddyCoreTests: XCTestCase {
         XCTAssertEqual(services[1].host, "192.168.1.44")
     }
 
+    func testParseMDNSServicesTrimsTrailingDotFromHost() {
+        let output = "adb-XYZ _adb-tls-connect._tcp. local. Pixel-7.local.:39029"
+
+        let services = ADBParsing.parseMDNSServices(output)
+
+        XCTAssertEqual(services.count, 1)
+        XCTAssertEqual(services[0].host, "Pixel-7.local")
+        XCTAssertEqual(services[0].port, 39029)
+    }
+
     func testPrimaryDeviceSelectorPrefersPreferredSerialThenWireless() {
         let usb = Device(serial: "usb-1", status: .device, model: "Pixel_6", isWireless: false)
         let wifi = Device(serial: "192.168.1.44:39029", status: .device, model: "Pixel_7", isWireless: true, host: "192.168.1.44", port: 39029)

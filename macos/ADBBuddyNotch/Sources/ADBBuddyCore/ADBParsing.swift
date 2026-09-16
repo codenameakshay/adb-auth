@@ -43,10 +43,12 @@ public enum ADBParsing {
             }
     }
 
-    public static func parseMDNSServices(_ output: String) -> [MDNSService] {
-        let regex = try? NSRegularExpression(pattern: #"([A-Za-z0-9._:-]+):(\d+)\s*$"#)
+    private static var hostPortPattern: Regex<(Substring, Substring, Substring)> {
+        /([A-Za-z0-9._:-]+):(\d+)\s*$/
+    }
 
-        return output
+    public static func parseMDNSServices(_ output: String) -> [MDNSService] {
+        output
             .split(whereSeparator: \.isNewline)
             .compactMap { rawLine -> MDNSService? in
                 let line = String(rawLine).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -61,21 +63,12 @@ public enum ADBParsing {
                 let parts = line.split(whereSeparator: \.isWhitespace).map(String.init)
                 let name = parts.first ?? "unknown"
 
-                guard let regex else { return nil }
-                let nsLine = line as NSString
-                let range = NSRange(location: 0, length: nsLine.length)
-                guard let match = regex.firstMatch(in: line, range: range),
-                      match.numberOfRanges == 3 else {
+                guard let match = line.firstMatch(of: hostPortPattern),
+                      let port = Int(match.2) else {
                     return nil
                 }
 
-                let host = nsLine.substring(with: match.range(at: 1))
-                    .trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
-                    .replacingOccurrences(of: ".", with: "", options: .anchored)
-                guard let port = Int(nsLine.substring(with: match.range(at: 2))) else {
-                    return nil
-                }
-
+                let host = String(match.1).trimmingCharacters(in: CharacterSet(charactersIn: "[]."))
                 return MDNSService(name: name, host: host, port: port, kind: kind)
             }
     }

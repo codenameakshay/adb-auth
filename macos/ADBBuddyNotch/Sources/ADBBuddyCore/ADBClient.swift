@@ -94,7 +94,7 @@ public actor ADBClient {
         pollInterval: TimeInterval = 1.5
     ) async throws -> MDNSService {
         let deadline = Date().addingTimeInterval(timeout)
-        let normalizedHostHint = hostHint?.trimmingCharacters(in: CharacterSet(charactersIn: ".")).lowercased()
+        let normalizedHostHint = hostHint?.lowercased()
 
         while Date() < deadline {
             try Task.checkCancellation()
@@ -105,7 +105,7 @@ public actor ADBClient {
                 }
 
                 if let normalizedHostHint {
-                    return service.host.trimmingCharacters(in: CharacterSet(charactersIn: ".")).lowercased() == normalizedHostHint
+                    return service.host.lowercased() == normalizedHostHint
                 }
 
                 return true
