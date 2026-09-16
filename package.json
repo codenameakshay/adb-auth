@@ -23,7 +23,7 @@
   "type": "module",
   "main": "dist-electron/electron/main.js",
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=22.18.0",
     "npm": ">=10.0.0"
   },
   "scripts": {
@@ -34,7 +34,8 @@
     "build:renderer": "tsc -p tsconfig.app.json && vite build",
     "build:electron": "tsc -p tsconfig.electron.json",
     "lint": "eslint .",
-    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.electron.json --noEmit",
+    "test": "node --test \"electron/**/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.electron.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "preview": "vite preview",
     "pack": "npm run builder -- --dir",
     "dist": "npm run build:renderer && npm run build:electron && npm run builder -- --publish never"
