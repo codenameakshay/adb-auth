@@ -87,7 +87,7 @@ function AppShell({ settings }: { settings: AppSettings }) {
 }
 
 function AppContent() {
-  const { settings } = useSettings()
+  const settings = useSettings((s) => s.settings)
 
   return (
     <DevicesProvider refreshInterval={settings.refreshInterval}>
