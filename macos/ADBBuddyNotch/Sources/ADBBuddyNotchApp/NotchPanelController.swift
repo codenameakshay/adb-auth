@@ -1,6 +1,6 @@
 import AppKit
 import Combine
-import CoreVideo
+import QuartzCore
 import SwiftUI
 
 @MainActor
@@ -9,12 +9,12 @@ final class NotchPanelController: NSObject {
     // MARK: - Stored state
 
     private let store: NotchAppState
-    private let panel: NSPanel
+    let panel: NSPanel
     private let rootView: NotchPanelRootView
     private var settingsWindow: NSWindow?
 
     private var animator: SpringAnimator
-    private var displayLink: CVDisplayLink?
+    private var displayLink: CADisplayLink?
     private var lastTimestamp: Double = 0
 
     /// Computed once when the strip layout is first resolved.
@@ -175,7 +175,7 @@ final class NotchPanelController: NSObject {
             targetWidth = currentExpandedSize.width
             targetHeight = currentExpandedSize.height
             targetMidX = screen.frame.midX
-            NSApp.activate(ignoringOtherApps: true)
+            NSApp.activate()
             panel.makeKeyAndOrderFront(nil)
         } else {
             targetWidth = collapsedFrame.width
@@ -231,33 +231,21 @@ final class NotchPanelController: NSObject {
 
     private func startDisplayLink() {
         guard displayLink == nil else { return }
-        var dl: CVDisplayLink?
-        CVDisplayLinkCreateWithActiveCGDisplays(&dl)
-        guard let dl else { return }
-
-        let selfPtr = Unmanaged.passUnretained(self).toOpaque()
-        CVDisplayLinkSetOutputCallback(dl, { _, inNow, _, _, _, ctx -> CVReturn in
-            guard let ctx else { return kCVReturnError }
-            let c = Unmanaged<NotchPanelController>.fromOpaque(ctx).takeUnretainedValue()
-            let ts = Double(inNow.pointee.videoTime) / Double(inNow.pointee.videoTimeScale)
-            DispatchQueue.main.async { c.displayLinkTick(timestamp: ts) }
-            return kCVReturnSuccess
-        }, selfPtr)
-
-        displayLink = dl
+        let link = rootView.displayLink(target: self, selector: #selector(displayLinkTick(_:)))
+        link.add(to: .main, forMode: .common)
+        displayLink = link
         lastTimestamp = 0
-        CVDisplayLinkStart(dl)
     }
 
     private func stopDisplayLink() {
-        guard let dl = displayLink else { return }
-        CVDisplayLinkStop(dl)
+        guard let link = displayLink else { return }
+        link.invalidate()
         displayLink = nil
         lastTimestamp = 0
     }
 
-    private func displayLinkTick(timestamp: Double) {
-        guard displayLink != nil else { return }  // Guard against stale dispatched ticks.
+    @objc private func displayLinkTick(_ link: CADisplayLink) {
+        let timestamp = link.timestamp
         defer { lastTimestamp = timestamp }
         guard lastTimestamp > 0 else { return }
 
@@ -317,7 +305,7 @@ final class NotchPanelController: NSObject {
     private func openSettingsWindow() {
         if let existing = settingsWindow, existing.isVisible {
             existing.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
+            NSApp.activate()
             return
         }
 
@@ -339,7 +327,7 @@ final class NotchPanelController: NSObject {
         window.delegate = self
         settingsWindow = window
         window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
     }
 
     private func closeSettingsWindow() {

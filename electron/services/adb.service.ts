@@ -35,7 +35,7 @@ export function stripTrailingDot(host: string): string {
   return host.replace(/\.$/, '').trim()
 }
 
-function parseDeviceList(output: string): AdbDevice[] {
+export function parseDeviceList(output: string): AdbDevice[] {
   const lines = output.split('\n').filter((l) => l.trim())
   const devices: AdbDevice[] = []
 
@@ -79,7 +79,7 @@ function parseDeviceList(output: string): AdbDevice[] {
   return devices
 }
 
-function parseMdnsServices(output: string): MdnsService[] {
+export function parseMdnsServices(output: string): MdnsService[] {
   const services: MdnsService[] = []
 
   for (const rawLine of output.split('\n')) {

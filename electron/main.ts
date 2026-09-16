@@ -17,7 +17,7 @@ let tray: Tray | null = null
 function createWindow(): void {
   const iconPath = process.platform === 'win32'
     ? path.join(__dirname, '../../resources/icon.ico')
-    : path.join(__dirname, '../../resources/tray-icon.png')
+    : path.join(__dirname, '../../resources/icon.png')
 
   mainWindow = new BrowserWindow({
     width: 1000,
@@ -159,7 +159,9 @@ function buildTrayMenu(): Menu {
 }
 
 function createTray(): void {
-  const iconPath = path.join(__dirname, '../../resources/tray-icon.png')
+  const iconPath = process.platform === 'darwin'
+    ? path.join(__dirname, '../../resources/trayTemplate.png')
+    : path.join(__dirname, '../../resources/tray-icon.png')
   const icon = nativeImage.createFromPath(iconPath)
   tray = new Tray(icon)
 

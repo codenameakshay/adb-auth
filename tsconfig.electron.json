@@ -15,5 +15,6 @@
     "declaration": false,
     "sourceMap": true
   },
-  "include": ["electron/**/*", "shared/**/*"]
+  "include": ["electron/**/*", "shared/**/*"],
+  "exclude": ["**/*.test.ts"]
 }
