@@ -106,7 +106,7 @@ Available for **Windows** and **Linux**.
 
 ## Requirements (Electron)
 
-- **Node.js** 20+ and **npm** 10+
+- **Node.js** 22.18+ and **npm** 10+
 - **Android platform-tools** (`adb`) on `PATH` or set in **Settings**
 - **Android 11+** for wireless pairing (as required by the OS)
 
@@ -132,6 +132,7 @@ npm run dev:renderer
 | `npm run dev:electron` | Vite + Electron (full app) |
 | `npm run dev:renderer` | Vite dev server only |
 | `npm run lint` | ESLint |
+| `npm test` | Run Electron unit tests (`node:test`) |
 | `npm run typecheck` | TypeScript (renderer + Electron) |
 | `npm run build:renderer` | Production React bundle → `dist/` |
 | `npm run build:electron` | Compile Electron main/preload → `dist-electron/` |

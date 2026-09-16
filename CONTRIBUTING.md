@@ -62,6 +62,7 @@ Use `npm run dev:renderer` if you only need the web UI in a browser (Electron AP
 
 ```bash
 npm run lint
+npm test
 npm run typecheck
 npm run build:renderer
 npm run build:electron

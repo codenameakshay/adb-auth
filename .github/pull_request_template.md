@@ -10,6 +10,7 @@
 
 - [ ] `npm run lint`
 - [ ] `npm run typecheck`
+- [ ] `npm test`
 - [ ] `npm run build:renderer`
 - [ ] `npm run build:electron`
 - [ ] Manual test completed (pairing / tray / UI as relevant)
