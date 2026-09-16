@@ -1,10 +1,11 @@
-import { exec } from 'node:child_process'
+import { exec, execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import * as os from 'node:os'
 
 const execAsync = promisify(exec)
+const execFileAsync = promisify(execFile)
 const isWindows = process.platform === 'win32'
 const adbBinaryName = isWindows ? 'adb.exe' : 'adb'
 
@@ -102,7 +103,7 @@ export async function detectAdbPath(): Promise<string | null> {
 export async function verifyAdbPath(adbPath: string): Promise<boolean> {
   try {
     if (!fs.existsSync(adbPath)) return false
-    const { stdout } = await execAsync(`"${adbPath}" version`, {
+    const { stdout } = await execFileAsync(adbPath, ['version'], {
       windowsHide: true,
       timeout: 5000,
     })
@@ -110,4 +111,11 @@ export async function verifyAdbPath(adbPath: string): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+export async function resolveAdbPath(stored: string | null): Promise<string | null> {
+  if (stored && (await verifyAdbPath(stored))) return stored
+  const detected = await detectAdbPath()
+  if (detected) return detected
+  return stored
 }
