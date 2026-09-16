@@ -19,14 +19,14 @@ export function ManualPairForm({ onSuccess, onError }: ManualPairFormProps) {
 
     setBusy(true)
     try {
-      const pairResult = await window.electronAPI.adb.pair(ip, parseInt(port, 10), code)
+      const pairResult = await window.electronAPI.adb.pair(ip, Number.parseInt(port, 10), code)
       if (!pairResult.success) {
         onError(pairResult.error || 'Pairing didn’t finish. Check the IP, pairing port, and code, then try again.')
         return
       }
 
       if (debugPort.trim()) {
-        const connectResult = await window.electronAPI.adb.connect(ip, parseInt(debugPort.trim(), 10))
+        const connectResult = await window.electronAPI.adb.connect(ip, Number.parseInt(debugPort.trim(), 10))
         if (!connectResult.success) {
           onError(
             connectResult.error ||
@@ -92,7 +92,7 @@ export function ManualPairForm({ onSuccess, onError }: ManualPairFormProps) {
             type="text"
             inputMode="numeric"
             value={port}
-            onChange={(e) => setPort(e.target.value)}
+            onChange={(e) => setPort(e.target.value.replace(/\D/g, ''))}
             placeholder="37185"
             className="ui-input font-code text-sm"
             aria-describedby="pair-port-hint"

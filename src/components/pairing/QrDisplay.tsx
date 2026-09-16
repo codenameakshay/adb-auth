@@ -1,13 +1,8 @@
 import { CheckCircle2, Loader2, XCircle, RefreshCw } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import type { PairingState } from '../../hooks/usePairing'
 
-interface QrDisplayProps {
-  qrDataUrl: string | null
-  status: 'idle' | 'waiting' | 'pairing' | 'connecting' | 'success' | 'error'
-  stage?: 'waiting_for_scan' | 'waiting_for_pairing_service' | 'pairing' | 'waiting_for_connect_service' | 'connecting' | 'success' | 'error'
-  detail: string | null
-  androidIp: string | null
-  error: string | null
+type QrDisplayProps = PairingState & {
   onStart: () => void
   onCancel: () => void
 }

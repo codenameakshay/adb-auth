@@ -18,14 +18,11 @@ function TrayCommandBridge() {
   const { refresh } = useDevicesContext()
 
   useEffect(() => {
-    const api = window.electronAPI?.app
-    if (!api) return
-
-    const offNav = api.onNavigate((path) => {
+    const offNav = window.electronAPI.app.onNavigate((path) => {
       const normalized = path.startsWith('/') ? path : `/${path}`
       if (TRAY_ROUTES.has(normalized)) navigate(normalized)
     })
-    const offRefresh = api.onRefreshDevices(() => {
+    const offRefresh = window.electronAPI.app.onRefreshDevices(() => {
       void refresh()
     })
     return () => {

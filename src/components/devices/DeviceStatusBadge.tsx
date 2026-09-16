@@ -6,14 +6,14 @@ const STATUS_CONFIG = {
   offline: { label: 'Offline', variant: 'neutral' as const },
   unauthorized: { label: 'Unauthorized', variant: 'warning' as const },
   connecting: { label: 'Connecting', variant: 'accent-blue' as const },
-}
+} satisfies Record<AdbDevice['status'], { label: string; variant: string }>
 
 interface DeviceStatusBadgeProps {
   status: AdbDevice['status']
 }
 
 export function DeviceStatusBadge({ status }: DeviceStatusBadgeProps) {
-  const config = STATUS_CONFIG[status] || STATUS_CONFIG.offline
+  const config = STATUS_CONFIG[status]
   return (
     <span className={cn('ui-badge', `ui-badge--${config.variant}`)}>
       {config.label}

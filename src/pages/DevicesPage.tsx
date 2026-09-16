@@ -37,22 +37,13 @@ export function DevicesPage() {
   const [discoveredServices, setDiscoveredServices] = useState<MdnsService[]>([])
   const navigate = useNavigate()
 
-  useEffect(() => {
-    if (!window.electronAPI) return
-    const unsub = window.electronAPI.mdns.onDiscovered((services) => {
-      setDiscoveredServices(services)
-    })
-    return () => {
-      unsub()
-    }
-  }, [])
+  useEffect(() => window.electronAPI.mdns.onDiscovered(setDiscoveredServices), [])
 
   useEffect(() => {
     if (connectedDevices.length > 0) dismissQuickStart()
   }, [connectedDevices.length])
 
-  const adbMissing =
-    error && (error.includes('not configured') || error.includes('ENOENT') || error.toLowerCase().includes('adb'))
+  const adbMissing = error && (error.includes('not configured') || error.includes('ENOENT'))
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -154,7 +145,7 @@ export function DevicesPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => connectDevice(svc.host.replace(/\.$/, ''), svc.port)}
+                        onClick={() => connectDevice(svc.host, svc.port)}
                         className="ui-btn ui-btn-secondary min-h-11 w-full shrink-0 px-3 text-xs sm:w-auto"
                       >
                         Connect
