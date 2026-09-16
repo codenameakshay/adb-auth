@@ -21,6 +21,12 @@ export interface AppSettings {
   minimizeToTray: boolean
 }
 
+export const DEFAULT_SETTINGS: AppSettings = {
+  adbPath: null,
+  refreshInterval: 3000,
+  minimizeToTray: false,
+}
+
 export interface IpcResult<T = void> {
   success: boolean
   data?: T

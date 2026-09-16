@@ -2,6 +2,12 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc-channels.js'
 import type { IpcResult, AdbDevice, AppSettings, StartPairingResult, PairingStatus, MdnsService } from '../shared/types.js'
 
+function subscribe<A extends unknown[]>(channel: string, cb: (...args: A) => void): () => void {
+  const handler = (_: Electron.IpcRendererEvent, ...args: A) => cb(...args)
+  ipcRenderer.on(channel, handler)
+  return () => ipcRenderer.removeListener(channel, handler)
+}
+
 const api = {
   // ADB
   adb: {
@@ -35,20 +41,14 @@ const api = {
       ipcRenderer.invoke(IPC.PAIRING_START),
     cancel: (): Promise<IpcResult> =>
       ipcRenderer.invoke(IPC.PAIRING_CANCEL),
-    onStatus: (cb: (status: PairingStatus) => void) => {
-      const handler = (_: Electron.IpcRendererEvent, status: PairingStatus) => cb(status)
-      ipcRenderer.on(IPC.PAIRING_STATUS, handler)
-      return () => ipcRenderer.removeListener(IPC.PAIRING_STATUS, handler)
-    },
+    onStatus: (cb: (status: PairingStatus) => void) =>
+      subscribe<[PairingStatus]>(IPC.PAIRING_STATUS, cb),
   },
 
   // mDNS
   mdns: {
-    onDiscovered: (cb: (services: MdnsService[]) => void) => {
-      const handler = (_: Electron.IpcRendererEvent, services: MdnsService[]) => cb(services)
-      ipcRenderer.on(IPC.MDNS_DISCOVERED, handler)
-      return () => ipcRenderer.removeListener(IPC.MDNS_DISCOVERED, handler)
-    },
+    onDiscovered: (cb: (services: MdnsService[]) => void) =>
+      subscribe<[MdnsService[]]>(IPC.MDNS_DISCOVERED, cb),
   },
 
   // Settings
@@ -61,16 +61,10 @@ const api = {
 
   // Tray → renderer (one-way)
   app: {
-    onNavigate: (cb: (path: string) => void) => {
-      const handler = (_: Electron.IpcRendererEvent, path: string) => cb(path)
-      ipcRenderer.on(IPC.APP_NAVIGATE, handler)
-      return () => ipcRenderer.removeListener(IPC.APP_NAVIGATE, handler)
-    },
-    onRefreshDevices: (cb: () => void) => {
-      const handler = () => cb()
-      ipcRenderer.on(IPC.APP_REFRESH_DEVICES, handler)
-      return () => ipcRenderer.removeListener(IPC.APP_REFRESH_DEVICES, handler)
-    },
+    onNavigate: (cb: (path: string) => void) =>
+      subscribe<[string]>(IPC.APP_NAVIGATE, cb),
+    onRefreshDevices: (cb: () => void) =>
+      subscribe<[]>(IPC.APP_REFRESH_DEVICES, cb),
   },
 }
 

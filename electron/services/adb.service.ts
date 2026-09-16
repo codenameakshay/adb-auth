@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { setTimeout as sleep } from 'node:timers/promises'
 import type { AdbDevice, MdnsService } from '../../shared/types.js'
 
 const execFileAsync = promisify(execFile)
@@ -28,10 +29,6 @@ async function run(args: string[], timeoutMs = 10000): Promise<string> {
     const detail = `${e.stdout || ''}${e.stderr || ''}`.trim()
     throw new Error(detail || e.message || 'ADB command failed')
   }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 export function stripTrailingDot(host: string): string {
