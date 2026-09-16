@@ -6,6 +6,10 @@ enum PairingLayoutConstants {
     static let qrSide: CGFloat = 220
 }
 
+extension Color {
+    fileprivate static let secondaryText = Color.white.opacity(0.6)
+}
+
 struct ExpandedOverlayView: View {
     @ObservedObject var store: NotchAppState
 
@@ -21,10 +25,7 @@ struct ExpandedOverlayView: View {
 private struct ExpandedOverlayContentView: View {
     @ObservedObject var store: NotchAppState
 
-    private static let contentTransition = AnyTransition.asymmetric(
-        insertion: .opacity.combined(with: .scale(scale: 0.97, anchor: .top)),
-        removal:   .opacity.combined(with: .scale(scale: 0.97, anchor: .top))
-    )
+    private static let contentTransition = AnyTransition.opacity.combined(with: .scale(scale: 0.97, anchor: .top))
 
     var body: some View {
         VStack(alignment: .center, spacing: 12) {
@@ -82,8 +83,8 @@ private struct SetupStateView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Current path")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.6))
-                Text(store.adbPathInput.isEmpty ? "Auto-detecting from PATH and common SDK locations" : store.adbPathInput)
+                    .foregroundStyle(Color.secondaryText)
+                Text(verbatim: store.adbPathInput.isEmpty ? "Auto-detecting from PATH and common SDK locations" : store.adbPathInput)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.86))
                     .textSelection(.enabled)
@@ -128,22 +129,14 @@ private struct PairingStateView: View {
             )
 
             if let serviceName = store.pairingPayload?.serviceName {
-                    Text(serviceName)
-                        .font(.system(size: 7, design: .monospaced))
-                        .foregroundStyle(Color.white.opacity(0.6))
+                Text(verbatim: serviceName)
+                    .font(.system(size: 7, design: .monospaced))
+                    .foregroundStyle(Color.secondaryText)
             }
 
             ActionButton(title: "Restart QR", systemName: "qrcode") {
-                    store.restartPairing()
-            }.foregroundStyle(Color.white.opacity(0.6))
-
-            // HStack(spacing: 10) {
-                
-            //     // ActionButton(title: "Cancel", systemName: "xmark.circle") {
-            //     //     store.cancelPairing()
-            //     // }
-            //     .foregroundStyle(Color.white.opacity(0.6))
-            // }
+                store.restartPairing()
+            }.foregroundStyle(Color.secondaryText)
 
             if let error = store.pairingProgress.error {
                 InlineBanner(text: error, tint: .red)
@@ -162,13 +155,13 @@ private struct ConnectedStateView: View {
             Color.clear.frame(height: 22)
 
             if let primary = store.primaryDevice {
-                DeviceSummaryCard(device: primary, isPrimary: true)
+                DeviceSummaryCard(device: primary)
 
                 if !store.secondaryDevices.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("+\(store.secondaryDevices.count) more connected")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.6))
+                            .foregroundStyle(Color.secondaryText)
                     }
                 }
 
@@ -185,7 +178,7 @@ private struct ConnectedStateView: View {
                 }
             } else {
                 Text("No connected devices.")
-                    .foregroundStyle(Color.white.opacity(0.6))
+                    .foregroundStyle(Color.secondaryText)
             }
         }
         .padding(.horizontal, 20)
@@ -205,7 +198,7 @@ struct SettingsSheetView: View {
                     .font(.system(.body, design: .monospaced))
                 Text("Leave blank to auto-detect from PATH and common macOS SDK locations.")
                     .font(.system(size: 11))
-                    .foregroundStyle(Color.white.opacity(0.6))
+                    .foregroundStyle(Color.secondaryText)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -223,7 +216,7 @@ struct SettingsSheetView: View {
             if let settingsMessage = store.settingsMessage {
                 Text(settingsMessage)
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.white.opacity(0.6))
+                    .foregroundStyle(Color.secondaryText)
             }
 
             Divider()
@@ -252,7 +245,6 @@ struct SettingsSheetView: View {
 
 private struct DeviceSummaryCard: View {
     let device: Device
-    let isPrimary: Bool
 
     private var title: String {
         device.model?.replacingOccurrences(of: "_", with: " ") ?? "Unknown Device"
@@ -262,9 +254,9 @@ private struct DeviceSummaryCard: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(title)
-                    .font(.system(size: 12, weight: isPrimary ? .semibold : .medium))
+                    .font(.system(size: 12, weight: .semibold))
                 Spacer()
-                Text(device.status.rawValue.capitalized)
+                Text("Connected")
                     .font(.system(size: 8, weight: .semibold))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
@@ -276,14 +268,14 @@ private struct DeviceSummaryCard: View {
                 .font(.system(size: 12, design: .monospaced))
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
-                .foregroundStyle(Color.white.opacity(0.6))
+                .foregroundStyle(Color.secondaryText)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(isPrimary ? Color.white.opacity(0.08) : Color.white.opacity(0.05))
+                .fill(Color.white.opacity(0.08))
         )
     }
 }
@@ -322,7 +314,7 @@ private struct PlaceholderDeviceCard: View {
             HStack {
                 Text("ADB Buddy")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.white.opacity(0.6))
+                    .foregroundStyle(Color.secondaryText)
                 Spacer()
                 Text("Loading")
                     .font(.system(size: 8, weight: .semibold))
@@ -334,7 +326,7 @@ private struct PlaceholderDeviceCard: View {
 
             Text("Starting up...")
                 .font(.system(size: 12, design: .monospaced))
-                .foregroundStyle(Color.white.opacity(0.6))
+                .foregroundStyle(Color.secondaryText)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -442,23 +434,6 @@ private struct InlineBanner: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(tint.opacity(0.18))
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-}
-
-private struct DetailLine: View {
-    let title: String
-    let value: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Color.white.opacity(0.6))
-            Text(value)
-                .font(.system(size: 12, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.86))
-                .textSelection(.enabled)
-        }
     }
 }
 
