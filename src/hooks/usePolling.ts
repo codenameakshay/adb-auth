@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react'
 
 /** Polls `callback` every `intervalMs`, but only while the tab is visible; catches up once on return. */
-export function usePolling(callback: () => void, intervalMs: number): void {
+export function usePolling(callback: () => void, intervalMs: number, { immediate = false } = {}): void {
   const callbackRef = useRef(callback)
   useEffect(() => {
     callbackRef.current = callback
   })
 
   useEffect(() => {
+    if (immediate) callbackRef.current()
     const id = window.setInterval(() => {
       if (document.visibilityState === 'visible') callbackRef.current()
     }, intervalMs)
@@ -21,5 +22,5 @@ export function usePolling(callback: () => void, intervalMs: number): void {
       window.clearInterval(id)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [intervalMs])
+  }, [intervalMs, immediate])
 }
