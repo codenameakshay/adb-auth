@@ -24,14 +24,14 @@ struct SpringAnimator {
     var midX: SpringState
 
     // Tuned for Dynamic Island-like bounce: slight overshoot, quick settle.
-    let stiffness: CGFloat = 280
-    let damping: CGFloat = 22
-    let mass: CGFloat = 1.0
+    static let stiffness: CGFloat = 280
+    static let damping: CGFloat = 22
+    static let mass: CGFloat = 1.0
 
     mutating func advance(dt: CGFloat) {
-        width.advance(dt: dt, stiffness: stiffness, damping: damping, mass: mass)
-        height.advance(dt: dt, stiffness: stiffness, damping: damping, mass: mass)
-        midX.advance(dt: dt, stiffness: stiffness, damping: damping, mass: mass)
+        width.advance(dt: dt, stiffness: Self.stiffness, damping: Self.damping, mass: Self.mass)
+        height.advance(dt: dt, stiffness: Self.stiffness, damping: Self.damping, mass: Self.mass)
+        midX.advance(dt: dt, stiffness: Self.stiffness, damping: Self.damping, mass: Self.mass)
     }
 
     var isSettled: Bool {

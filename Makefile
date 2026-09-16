@@ -10,4 +10,4 @@ test:
 	cd macos/ADBBuddyNotch && swift test
 
 clean:
-	cd macos/ADBBuddyNotch && swift build --clean
+	cd macos/ADBBuddyNotch && swift package clean

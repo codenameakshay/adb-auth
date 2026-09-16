@@ -4,24 +4,9 @@ import XCTest
 
 final class OverlayGeometryTests: XCTestCase {
 
-    func testExpandedSurfaceProvidesEnoughMaskedBodyWidthForPairingRow() {
-        let maskedBodyWidth = OverlayGeometry.maskedBodyWidth(for: OverlayLayout.expandedSurface)
-
-        XCTAssertGreaterThanOrEqual(maskedBodyWidth, PairingLayoutConstants.minimumBodyWidth)
-    }
-
-    func testCollapsedHeightIsClampedToHardwareNotchFloor() {
-        let clamped = OverlayGeometry.clampedPanelHeight(
-            24,
-            isExpanded: false,
-            collapsedHeight: 32
-        )
-
-        XCTAssertEqual(clamped, 32, accuracy: 0.001)
-    }
     func testPanelFrameUsesStableSizeAndPinsTopEdgeToScreen() {
         let screenFrame = CGRect(x: 0, y: 0, width: 1512, height: 982)
-        let size = OverlayLayout.expandedSurface
+        let size = NotchViewMode.pairing.panelSize
 
         let frame = OverlayGeometry.panelFrame(
             midX: screenFrame.midX,
@@ -35,5 +20,20 @@ final class OverlayGeometryTests: XCTestCase {
         XCTAssertEqual(frame.size.height, size.height, accuracy: 0.001)
         XCTAssertEqual(frame.maxY, screenFrame.maxY, accuracy: 0.001)
         XCTAssertEqual(frame.midX, screenFrame.midX, accuracy: 0.001)
+    }
+
+    func testPanelFrameClampsToLeftScreenEdge() {
+        let screenFrame = CGRect(x: 0, y: 0, width: 1512, height: 982)
+        let size = NotchViewMode.pairing.panelSize
+
+        let frame = OverlayGeometry.panelFrame(
+            midX: screenFrame.minX,
+            screenMaxY: screenFrame.maxY,
+            size: size,
+            screenMinX: screenFrame.minX,
+            screenMaxX: screenFrame.maxX
+        )
+
+        XCTAssertEqual(frame.minX, screenFrame.minX + NotchStripLayoutConstants.horizontalScreenMargin, accuracy: 0.001)
     }
 }

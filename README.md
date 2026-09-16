@@ -28,9 +28,9 @@ The app has several visual states:
 
 All app states can be previewed using `make preview`:
 
-![App States - Part 1](./docs/screenshots/Screenshot%202026-04-13%20at%2012.48.09%20PM.png)
+![App States - Part 1](./docs/screenshots/notch-states-1.png)
 
-![App States - Part 2](./docs/screenshots/Screenshot%202026-04-13%20at%2012.48.26%20PM.png)
+![App States - Part 2](./docs/screenshots/notch-states-2.png)
 
 ### Pairing Sub-States
 
@@ -109,7 +109,6 @@ Available for **Windows** and **Linux**.
 - **Node.js** 20+ and **npm** 10+
 - **Android platform-tools** (`adb`) on `PATH` or set in **Settings**
 - **Android 11+** for wireless pairing (as required by the OS)
-- **OpenSSL** on `PATH** (used by the pairing flow on some setups)
 
 ## Quick Start (Electron)
 

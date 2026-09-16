@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { setTimeout as sleep } from 'node:timers/promises'
 import type { AdbDevice, MdnsService } from '../../shared/types.js'
 
 const execFileAsync = promisify(execFile)
@@ -8,10 +9,6 @@ let adbPath: string | null = null
 
 export function setAdbPath(p: string | null): void {
   adbPath = p
-}
-
-export function getAdbPath(): string | null {
-  return adbPath
 }
 
 function getAdb(): string {
@@ -34,15 +31,11 @@ async function run(args: string[], timeoutMs = 10000): Promise<string> {
   }
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+export function stripTrailingDot(host: string): string {
+  return host.replace(/\.$/, '').trim()
 }
 
-function normalizeHost(host: string): string {
-  return host.replace(/\.$/, '').trim().toLowerCase()
-}
-
-export function parseDeviceList(output: string): AdbDevice[] {
+function parseDeviceList(output: string): AdbDevice[] {
   const lines = output.split('\n').filter((l) => l.trim())
   const devices: AdbDevice[] = []
 
@@ -86,7 +79,7 @@ export function parseDeviceList(output: string): AdbDevice[] {
   return devices
 }
 
-export function parseMdnsServices(output: string): MdnsService[] {
+function parseMdnsServices(output: string): MdnsService[] {
   const services: MdnsService[] = []
 
   for (const rawLine of output.split('\n')) {
@@ -109,7 +102,7 @@ export function parseMdnsServices(output: string): MdnsService[] {
     services.push({
       name,
       type,
-      host: host.replace(/\.$/, ''),
+      host: stripTrailingDot(host),
       port,
     })
   }
@@ -144,7 +137,7 @@ export async function disconnectDevice(serial: string): Promise<string> {
   return run(['disconnect', serial], 10000)
 }
 
-export async function discoverMdnsServices(typeFilter?: '_adb-tls-connect._tcp' | '_adb-tls-pairing._tcp'): Promise<MdnsService[]> {
+async function discoverMdnsServices(typeFilter?: '_adb-tls-connect._tcp' | '_adb-tls-pairing._tcp'): Promise<MdnsService[]> {
   const output = await run(['mdns', 'services'], 15000)
   const all = parseMdnsServices(output)
   if (!typeFilter) return all
@@ -164,22 +157,18 @@ export async function waitForMdnsService(options: WaitForMdnsOptions): Promise<M
   const pollMs = options.pollMs ?? 1500
   const deadline = Date.now() + timeoutMs
 
+  const lowerHostHint = options.hostHint ? stripTrailingDot(options.hostHint).toLowerCase() : null
+
   while (Date.now() < deadline) {
     const services = await discoverMdnsServices(options.type)
-    const normalizedHostHint = options.hostHint ? normalizeHost(options.hostHint) : null
 
     const match = services.find((svc) => {
       if (options.name && svc.name !== options.name) return false
-      if (normalizedHostHint && normalizeHost(svc.host) !== normalizedHostHint) return false
+      if (lowerHostHint && svc.host.toLowerCase() !== lowerHostHint) return false
       return true
     })
 
-    if (match) {
-      return {
-        ...match,
-        host: match.host.replace(/\.$/, ''),
-      }
-    }
+    if (match) return match
 
     await sleep(pollMs)
   }

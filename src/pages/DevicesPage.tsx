@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Header } from '../components/layout/Header'
 import { DeviceCard } from '../components/devices/DeviceCard'
 import { useDevicesContext } from '../context/DevicesProvider'
-import { QuickStartBanner } from '../components/onboarding/QuickStartBanner'
-import { dismissQuickStart } from '../lib/onboardingStorage'
+import { QuickStartBanner, QUICK_START_KEY } from '../components/onboarding/QuickStartBanner'
+import { writeFlag } from '../lib/storedFlag'
 import { useState, useEffect } from 'react'
 import type { MdnsService } from '../../shared/types'
 
@@ -32,29 +32,18 @@ function DevicesLoadingHints() {
 }
 
 export function DevicesPage() {
-  const { devices, loading, error, refresh, connectDevice, disconnectDevice } = useDevicesContext()
+  const { devices, connectedDevices, otherDevices, loading, error, refresh, connectDevice, disconnectDevice } =
+    useDevicesContext()
   const [discoveredServices, setDiscoveredServices] = useState<MdnsService[]>([])
   const navigate = useNavigate()
 
-  useEffect(() => {
-    if (!window.electronAPI) return
-    const unsub = window.electronAPI.mdns.onDiscovered((services) => {
-      setDiscoveredServices(services)
-    })
-    return () => {
-      unsub()
-    }
-  }, [])
-
-  const connectedDevices = devices.filter((d) => d.status === 'device')
-  const otherDevices = devices.filter((d) => d.status !== 'device')
+  useEffect(() => window.electronAPI.mdns.onDiscovered(setDiscoveredServices), [])
 
   useEffect(() => {
-    if (connectedDevices.length > 0) dismissQuickStart()
+    if (connectedDevices.length > 0) writeFlag(QUICK_START_KEY, true)
   }, [connectedDevices.length])
 
-  const adbMissing =
-    error && (error.includes('not configured') || error.includes('ENOENT') || error.toLowerCase().includes('adb'))
+  const adbMissing = error && (error.includes('not configured') || error.includes('ENOENT'))
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -156,7 +145,7 @@ export function DevicesPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => connectDevice(svc.host.replace(/\.$/, ''), svc.port)}
+                        onClick={() => connectDevice(svc.host, svc.port)}
                         className="ui-btn ui-btn-secondary min-h-11 w-full shrink-0 px-3 text-xs sm:w-auto"
                       >
                         Connect

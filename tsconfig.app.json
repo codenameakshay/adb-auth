@@ -22,11 +22,7 @@
     "noUnusedParameters": false,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
-
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "noUncheckedSideEffectImports": true
   },
   "include": ["src", "shared"]
 }

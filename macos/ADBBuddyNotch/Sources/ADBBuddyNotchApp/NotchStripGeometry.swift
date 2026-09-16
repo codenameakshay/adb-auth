@@ -2,8 +2,8 @@ import AppKit
 import CoreGraphics
 
 enum NotchStripLayoutConstants {
-    /// When auxiliary rects are missing but the display is notched.
-    static let fallbackNotchInnerWidth: CGFloat = 220
+    /// Fixed inner width of the collapsed notch strip; deliberately not derived from the auxiliary rects.
+    static let notchInnerWidth: CGFloat = 220
     /// Non-notched displays: centered menu-bar pill (Dynamic Island–like proportion).
     static let centeredPillWidth: CGFloat = 148
     static let iconSymbolWidth: CGFloat = 21
@@ -16,13 +16,11 @@ enum NotchStripLayoutConstants {
     static let horizontalScreenMargin: CGFloat = 8
     /// Never draw shorter than this; matches typical menu bar when API returns 0.
     static let minimumMenuBarThickness: CGFloat = 38
-    /// Top/bottom inset inside the menu bar band. Zero = full menu bar height, flush with screen top (notch / island).
-    static let stripVerticalInset: CGFloat = 0
-    /// Minimum pill height after insets.
+    /// Minimum strip height on notched displays.
     static let minimumStripHeight: CGFloat = 26
 }
 
-struct NotchStripScreenInputs: Equatable {
+struct NotchStripScreenInputs {
     var screenFrame: CGRect
     /// Top safe area inset; greater than zero selects notch-aligned strip mode.
     var safeAreaTopInset: CGFloat
@@ -47,13 +45,7 @@ enum NotchStripLayout {
         }
 
         let t = menuBarThickness
-        let inset = NotchStripLayoutConstants.stripVerticalInset
-        var h = t - 2 * inset
-        if h < NotchStripLayoutConstants.minimumStripHeight {
-            h = min(NotchStripLayoutConstants.minimumStripHeight, t)
-        }
-        let y = topY - t + (t - h) / 2
-        return (h, y)
+        return (t, topY - t)
     }
 
     /// Full strip frame in screen coordinates (AppKit space, origin bottom-left).
@@ -75,14 +67,11 @@ enum NotchStripLayout {
         if hasNotch {
             let leftMax = inputs.auxiliaryTopLeft.maxX
             let rightMin = inputs.auxiliaryTopRight.minX
-            let inner = rightMin - leftMax
             let useAux = inputs.auxiliaryTopLeft.width > 0.5
                 && inputs.auxiliaryTopRight.width > 0.5
-                && inner > 1
-            let effectiveInner = NotchStripLayoutConstants.fallbackNotchInnerWidth
-            // let effectiveInner = useAux ? inner : NotchStripLayoutConstants.fallbackNotchInnerWidth
+                && (rightMin - leftMax) > 1
             width = min(
-                effectiveInner + 2 * NotchStripLayoutConstants.collapsedNotchSideContentWidth,
+                NotchStripLayoutConstants.notchInnerWidth + 2 * NotchStripLayoutConstants.collapsedNotchSideContentWidth,
                 inputs.screenFrame.width - 2 * margin
             )
             midX = useAux ? (leftMax + rightMin) / 2 : inputs.screenFrame.midX
@@ -98,19 +87,6 @@ enum NotchStripLayout {
         x = min(max(x, inputs.screenFrame.minX + margin), inputs.screenFrame.maxX - width - margin)
 
         return CGRect(x: x, y: y, width: width, height: stripH)
-    }
-
-    /// Hit target for the icon on the trailing side of the strip.
-    static func iconHitFrame(stripFrame: CGRect) -> CGRect {
-        let maxSide = max(stripFrame.height - 6, 24)
-        let s = min(NotchStripLayoutConstants.iconHitSize, maxSide)
-        let pad = NotchStripLayoutConstants.iconTrailingPadding
-        return CGRect(
-            x: stripFrame.maxX - pad - s,
-            y: stripFrame.minY + (stripFrame.height - s) / 2,
-            width: s,
-            height: s
-        )
     }
 }
 

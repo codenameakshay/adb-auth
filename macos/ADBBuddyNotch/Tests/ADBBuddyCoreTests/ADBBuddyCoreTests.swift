@@ -35,27 +35,82 @@ final class ADBBuddyCoreTests: XCTestCase {
         XCTAssertEqual(services[1].host, "192.168.1.44")
     }
 
+    func testParseMDNSServicesTrimsTrailingDotFromHost() {
+        let output = "adb-XYZ _adb-tls-connect._tcp. local. Pixel-7.local.:39029"
+
+        let services = ADBParsing.parseMDNSServices(output)
+
+        XCTAssertEqual(services.count, 1)
+        XCTAssertEqual(services[0].host, "Pixel-7.local")
+        XCTAssertEqual(services[0].port, 39029)
+    }
+
     func testPrimaryDeviceSelectorPrefersPreferredSerialThenWireless() {
         let usb = Device(serial: "usb-1", status: .device, model: "Pixel_6", isWireless: false)
         let wifi = Device(serial: "192.168.1.44:39029", status: .device, model: "Pixel_7", isWireless: true, host: "192.168.1.44", port: 39029)
 
         XCTAssertEqual(
-            PrimaryDeviceSelector.select(from: [usb, wifi], preferredSerial: "usb-1")?.serial,
+            [usb, wifi].primaryDevice(preferredSerial: "usb-1")?.serial,
             "usb-1"
         )
         XCTAssertEqual(
-            PrimaryDeviceSelector.select(from: [usb, wifi], preferredSerial: nil)?.serial,
+            [usb, wifi].primaryDevice(preferredSerial: nil)?.serial,
             "192.168.1.44:39029"
         )
     }
 
-    func testPairingPayloadFactoryCreatesADBWifiPayload() {
-        let payload = PairingPayloadFactory.make()
+    func testPairingPayloadRandomCreatesADBWifiPayload() {
+        let payload = PairingPayload.random()
+
+        XCTAssertTrue(payload.password.allSatisfy(\.isASCII))
+        XCTAssertEqual(payload.password.count, 10)
+        XCTAssertTrue(payload.password.allSatisfy(\.isNumber))
 
         XCTAssertTrue(payload.serviceName.hasPrefix("studio-"))
-        XCTAssertEqual(payload.password.count, 10)
+        let suffix = payload.serviceName.dropFirst("studio-".count)
+        XCTAssertEqual(suffix.count, 10)
+        XCTAssertTrue(suffix.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) })
+
         XCTAssertTrue(payload.qrString.hasPrefix("WIFI:T:ADB;S:"))
         XCTAssertTrue(payload.qrString.hasSuffix(";;"))
+    }
+
+    func testProcessRunnerDrainsOutputLargerThanPipeBuffer() async throws {
+        let output = try await ProcessRunner.run(
+            executable: "/bin/sh",
+            arguments: ["-c", "head -c 200000 /dev/zero | tr '\\0' x"],
+            timeout: 5
+        )
+
+        XCTAssertEqual(output.count, 200_000)
+    }
+
+    func testProcessRunnerThrowsTimeoutForLongRunningProcess() async {
+        let start = Date()
+        do {
+            _ = try await ProcessRunner.run(executable: "/bin/sleep", arguments: ["5"], timeout: 0.3)
+            XCTFail("Expected ProcessRunnerError.timeout")
+        } catch ProcessRunnerError.timeout {
+            XCTAssertLessThan(Date().timeIntervalSince(start), 2)
+        } catch {
+            XCTFail("Expected ProcessRunnerError.timeout, got \(error)")
+        }
+    }
+
+    func testProcessRunnerThrowsNonZeroExitWithStderrOutput() async {
+        do {
+            _ = try await ProcessRunner.run(
+                executable: "/bin/sh",
+                arguments: ["-c", "echo boom >&2; exit 3"],
+                timeout: 5
+            )
+            XCTFail("Expected ProcessRunnerError.nonZeroExit")
+        } catch ProcessRunnerError.nonZeroExit(_, let status, let output) {
+            XCTAssertEqual(status, 3)
+            XCTAssertTrue(output.contains("boom"))
+        } catch {
+            XCTFail("Expected ProcessRunnerError.nonZeroExit, got \(error)")
+        }
     }
 
     func testCandidatePathsIncludesCommonMacPathsAndPathEntries() {

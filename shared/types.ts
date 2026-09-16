@@ -13,13 +13,18 @@ export interface MdnsService {
   host: string
   port: number
   type: string
-  addresses?: string[]
 }
 
 export interface AppSettings {
   adbPath: string | null
   refreshInterval: number
   minimizeToTray: boolean
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  adbPath: null,
+  refreshInterval: 3000,
+  minimizeToTray: false,
 }
 
 export interface IpcResult<T = void> {

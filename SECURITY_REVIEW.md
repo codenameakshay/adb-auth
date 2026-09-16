@@ -37,3 +37,19 @@
 - Run dependency audit regularly (`npm audit`) in network-enabled CI.
 - Keep Electron/Node dependencies updated.
 - Require security checklist in PRs touching IPC or command execution.
+
+## Addendum (2026-09-16)
+
+Finding 1 above ("Shell command injection risk -> Fixed") missed one path:
+the adb path check in `verifyAdbPath` still ran `exec` with the
+user-configurable `adbPath` interpolated into a shell string. That is now
+`execFile` with an explicit argv, matching the rest of `adb.service.ts`.
+
+Two related gaps are also closed:
+- `settings:set` now validates its input and only allows known settings
+  keys; a submitted `adbPath` is verified as a working `adb` binary before
+  it is applied, instead of being written to disk unchecked.
+- The `adb:get-path` and `adb:verify-path` IPC channels are removed; path
+  detection and verification now happen as part of `settings:set`, so the
+  renderer can no longer trigger an unverified path write through a
+  separate channel.

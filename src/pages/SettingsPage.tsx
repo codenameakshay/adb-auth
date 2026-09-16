@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { CheckCircle2, XCircle, Server, ServerOff, Loader2 } from 'lucide-react'
 import { Header } from '../components/layout/Header'
 import { useSettings } from '../hooks/useSettings'
+import { useTransient } from '../hooks/useTransient'
 import { cn } from '../lib/utils'
 
 const INTERVALS = [
@@ -11,57 +12,49 @@ const INTERVALS = [
   { label: '10s', value: 10000 },
 ]
 
+const SERVER_ACTIONS = {
+  kill: {
+    run: () => window.electronAPI.adb.killServer(),
+    done: 'ADB server stopped. Start it again if devices stop responding.',
+    failed: 'Could not stop the ADB server. Try again or restart the app.',
+  },
+  start: {
+    run: () => window.electronAPI.adb.startServer(),
+    done: 'ADB server is running again.',
+    failed: 'Could not start the ADB server. Check the path above.',
+  },
+}
+
 export function SettingsPage() {
-  const { settings, updateSettings } = useSettings()
+  const settings = useSettings((s) => s.settings)
+  const updateSettings = useSettings((s) => s.updateSettings)
   const [adbPathInput, setAdbPathInput] = useState('')
   const [adbStatus, setAdbStatus] = useState<'idle' | 'valid' | 'invalid'>('idle')
-  const [serverBusy, setServerBusy] = useState<'kill' | 'start' | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const [serverBusy, setServerBusy] = useState<keyof typeof SERVER_ACTIONS | null>(null)
+  const [toast, showToast] = useTransient<string>(3000)
 
   useEffect(() => {
     setAdbPathInput(settings.adbPath || '')
   }, [settings.adbPath])
 
-  const showToast = (msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3000)
-  }
-
-  const verifyPath = async () => {
-    if (!adbPathInput.trim()) return
-    const result = await window.electronAPI.adb.verifyPath(adbPathInput.trim())
-    if (result.success && result.data) {
+  const checkAndSave = async () => {
+    const trimmed = adbPathInput.trim()
+    if (!trimmed) return
+    const result = await updateSettings({ adbPath: trimmed })
+    if (result.success) {
       setAdbStatus('valid')
-      await updateSettings({ adbPath: adbPathInput.trim() })
-      showToast('ADB path saved. The footer should show Found after the next refresh.')
+      showToast('ADB path saved.')
     } else {
       setAdbStatus('invalid')
     }
   }
 
-  const killServer = async () => {
-    setServerBusy('kill')
+  const runServerAction = async (action: keyof typeof SERVER_ACTIONS) => {
+    const { run, done, failed } = SERVER_ACTIONS[action]
+    setServerBusy(action)
     try {
-      const result = await window.electronAPI.adb.killServer()
-      showToast(
-        result.success
-          ? 'ADB server stopped. Start it again if devices stop responding.'
-          : result.error || 'Could not stop the ADB server. Try again or restart the app.'
-      )
-    } finally {
-      setServerBusy(null)
-    }
-  }
-
-  const startServer = async () => {
-    setServerBusy('start')
-    try {
-      const result = await window.electronAPI.adb.startServer()
-      showToast(
-        result.success
-          ? 'ADB server is running again.'
-          : result.error || 'Could not start the ADB server. Check the path above.'
-      )
+      const result = await run()
+      showToast(result.success ? done : result.error || failed)
     } finally {
       setServerBusy(null)
     }
@@ -111,7 +104,7 @@ export function SettingsPage() {
                   <XCircle className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-app-danger" aria-hidden />
                 )}
               </div>
-              <button type="button" onClick={verifyPath} className="ui-btn ui-btn-secondary shrink-0 sm:min-w-[7.5rem]">
+              <button type="button" onClick={checkAndSave} className="ui-btn ui-btn-secondary shrink-0 sm:min-w-[7.5rem]">
                 Check and save
               </button>
             </div>
@@ -188,11 +181,11 @@ export function SettingsPage() {
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
-              <button type="button" onClick={killServer} disabled={!!serverBusy} className="ui-btn ui-btn-danger sm:min-w-[10rem]">
+              <button type="button" onClick={() => runServerAction('kill')} disabled={!!serverBusy} className="ui-btn ui-btn-danger sm:min-w-[10rem]">
                 {serverBusy === 'kill' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ServerOff className="h-4 w-4" aria-hidden />}
                 Stop server
               </button>
-              <button type="button" onClick={startServer} disabled={!!serverBusy} className="ui-btn ui-btn-primary sm:min-w-[10rem]">
+              <button type="button" onClick={() => runServerAction('start')} disabled={!!serverBusy} className="ui-btn ui-btn-primary sm:min-w-[10rem]">
                 {serverBusy === 'start' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Server className="h-4 w-4" aria-hidden />}
                 Start server
               </button>

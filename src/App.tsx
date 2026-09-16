@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { Sidebar } from './components/layout/Sidebar'
 import { StatusBar } from './components/layout/StatusBar'
@@ -18,14 +18,11 @@ function TrayCommandBridge() {
   const { refresh } = useDevicesContext()
 
   useEffect(() => {
-    const api = window.electronAPI?.app
-    if (!api) return
-
-    const offNav = api.onNavigate((path) => {
+    const offNav = window.electronAPI.app.onNavigate((path) => {
       const normalized = path.startsWith('/') ? path : `/${path}`
       if (TRAY_ROUTES.has(normalized)) navigate(normalized)
     })
-    const offRefresh = api.onRefreshDevices(() => {
+    const offRefresh = window.electronAPI.app.onRefreshDevices(() => {
       void refresh()
     })
     return () => {
@@ -47,8 +44,7 @@ function RouteFallback() {
 }
 
 function AppShell({ settings }: { settings: AppSettings }) {
-  const { devices } = useDevicesContext()
-  const connectedCount = useMemo(() => devices.filter((d) => d.status === 'device').length, [devices])
+  const { connectedDevices } = useDevicesContext()
 
   return (
     <div className="app-shell relative flex h-screen w-screen overflow-hidden p-2 sm:p-2.5 md:p-3.5">
@@ -79,7 +75,7 @@ function AppShell({ settings }: { settings: AppSettings }) {
             </Routes>
           </Suspense>
 
-          <StatusBar adbPath={settings.adbPath} deviceCount={connectedCount} />
+          <StatusBar adbPath={settings.adbPath} deviceCount={connectedDevices.length} />
         </main>
       </div>
     </div>
@@ -87,7 +83,7 @@ function AppShell({ settings }: { settings: AppSettings }) {
 }
 
 function AppContent() {
-  const { settings } = useSettings()
+  const settings = useSettings((s) => s.settings)
 
   return (
     <DevicesProvider refreshInterval={settings.refreshInterval}>

@@ -1,13 +1,7 @@
 import { app } from 'electron'
 import * as path from 'node:path'
 import * as fs from 'node:fs'
-import type { AppSettings } from '../../shared/types.js'
-
-const DEFAULT_SETTINGS: AppSettings = {
-  adbPath: null,
-  refreshInterval: 3000,
-  minimizeToTray: false,
-}
+import { DEFAULT_SETTINGS, type AppSettings } from '../../shared/types.js'
 
 class StoreService {
   private storePath: string
@@ -35,8 +29,8 @@ class StoreService {
     try {
       fs.mkdirSync(path.dirname(this.storePath), { recursive: true })
       fs.writeFileSync(this.storePath, JSON.stringify(this.data, null, 2), 'utf-8')
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('Failed to save settings:', err)
     }
   }
 
